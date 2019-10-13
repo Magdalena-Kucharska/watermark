@@ -1,11 +1,12 @@
 import os
+import time
 
 from PySide2.QtCore import Qt, QSize
-from PySide2.QtGui import QIcon
+from PySide2.QtGui import QIcon, QPixmap
 from PySide2.QtWidgets import QMainWindow, QApplication, QMenu, QVBoxLayout, \
     QAction, QFileDialog, QWidget, \
     QListWidget, QListView, QListWidgetItem, QGraphicsView, QGraphicsScene, \
-    QDesktopWidget, QLabel, QHBoxLayout
+    QDesktopWidget, QLabel, QHBoxLayout, QProgressDialog
 
 
 class ImagesNav(QListWidget):
@@ -20,23 +21,43 @@ class ImagesNav(QListWidget):
         self.setViewMode(QListView.IconMode)
         self.setIconSize(QSize(128, 128))
         self.setResizeMode(QListView.Adjust)
-        self.setFixedHeight(180)
+        self.setFixedHeight(160)
 
     def update_navbar(self):
         self.clear()
-        for image in self.loaded_images:
-            self.addItem(QListWidgetItem(QIcon(image), os.path.basename(
-                image)))
+        progress = QProgressDialog("Loading images...", "Cancel", 0,
+                                   len(self.loaded_images), self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle("Watermark")
+        for i, image_path in enumerate(self.loaded_images):
+            progress.setValue(i)
+            if progress.wasCanceled():
+                break
+            scaled_image = QPixmap(image_path).scaled(QSize(128, 128))
+            item = QListWidgetItem(QIcon(scaled_image), os.path.basename(
+                image_path))
+            item.setData(Qt.UserRole, image_path)
+            self.addItem(item)
+        progress.setValue(len(self.loaded_images))
 
 
 class ImagesPanel(QVBoxLayout):
     def __init__(self, *args, **kwargs):
         super(ImagesPanel, self).__init__(*args, **kwargs)
         self.images_nav = ImagesNav()
+        self.images_nav.clicked.connect(lambda x: self.load_image(
+            self.images_nav.currentItem().data(Qt.UserRole)))
         self.image_edit_area = QGraphicsView()
         self.image_edit_area.setScene(QGraphicsScene())
         self.addWidget(self.images_nav)
         self.addWidget(self.image_edit_area)
+
+    def load_image(self, image_path):
+        self.image_edit_area.scene().clear()
+        image = QPixmap(image_path)
+        self.image_edit_area.scene().addPixmap(image)
+        self.image_edit_area.scene().setSceneRect(
+            self.image_edit_area.scene().itemsBoundingRect())
 
 
 class SettingsPanel(QVBoxLayout):
@@ -98,10 +119,12 @@ class MainWindow(QMainWindow):
                    "*.xpm *.XPM)")
         files_number = len(loaded_images[0])
         if files_number > 0:
+            t1 = time.time()
             self.main_layout.images_panel.images_nav.loaded_images = \
                 loaded_images[0]
             self.main_layout.images_panel.images_nav.update_navbar()
             self.status_message.setText(f"Loaded {files_number} files.")
+            print(time.time() - t1)
         else:
             self.status_message.setText("Opening files canceled.")
 
