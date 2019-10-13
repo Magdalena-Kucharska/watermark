@@ -6,7 +6,22 @@ from PySide2.QtGui import QIcon, QPixmap
 from PySide2.QtWidgets import QMainWindow, QApplication, QMenu, QVBoxLayout, \
     QAction, QFileDialog, QWidget, \
     QListWidget, QListView, QListWidgetItem, QGraphicsView, QGraphicsScene, \
-    QDesktopWidget, QLabel, QHBoxLayout, QProgressDialog
+    QDesktopWidget, QLabel, QHBoxLayout, QProgressDialog, QGraphicsTextItem, \
+    QGraphicsItem
+
+
+class CustomQGraphicsTextItem(QGraphicsTextItem):
+
+    def itemChange(self, change, value):
+        if change == self.ItemPositionChange:
+            rect = self.scene().sceneRect()
+            if not rect.contains(value):
+                value.setX(min(rect.right() - self.boundingRect().width(),
+                               max(value.x(), rect.left())))
+                value.setY(min(rect.bottom() - self.boundingRect().height(),
+                               max(value.y(), rect.top())))
+                return value
+        return QGraphicsItem.itemChange(self, change, value)
 
 
 class ImagesNav(QListWidget):
@@ -97,6 +112,11 @@ class MainWindow(QMainWindow):
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
         self.menuBar().addMenu(file_menu)
+        watermark_menu = QMenu("Watermark")
+        add_text_action = QAction("Add text", watermark_menu)
+        add_text_action.triggered.connect(self.add_text)
+        watermark_menu.addAction(add_text_action)
+        self.menuBar().addMenu(watermark_menu)
 
     def init_status_bar(self):
         self.statusBar()
@@ -127,6 +147,14 @@ class MainWindow(QMainWindow):
             print(time.time() - t1)
         else:
             self.status_message.setText("Opening files canceled.")
+
+    def add_text(self):
+        text_item = CustomQGraphicsTextItem("Watermark")
+        text_item.setFlags(QGraphicsTextItem.ItemIsSelectable |
+                           QGraphicsTextItem.ItemIsMovable |
+                           QGraphicsTextItem.ItemSendsScenePositionChanges)
+        self.main_layout.images_panel.image_edit_area.scene().addItem(
+            text_item)
 
 
 if __name__ == "__main__":
