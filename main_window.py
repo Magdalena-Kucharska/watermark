@@ -7,7 +7,7 @@ from PySide2.QtWidgets import QMainWindow, QApplication, QMenu, QVBoxLayout, \
     QAction, QFileDialog, QWidget, \
     QListWidget, QListView, QListWidgetItem, QGraphicsView, QGraphicsScene, \
     QDesktopWidget, QLabel, QHBoxLayout, QProgressDialog, QGraphicsTextItem, \
-    QGraphicsItem
+    QGraphicsItem, QComboBox
 
 
 class CustomQGraphicsTextItem(QGraphicsTextItem):
@@ -21,6 +21,12 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 value.setY(min(rect.bottom() - self.boundingRect().height(),
                                max(value.y(), rect.top())))
                 return value
+        if change == self.ItemSelectedHasChanged:
+            if value:
+                self.parent().init_text_settings(self)
+            else:
+                self.parent().remove_layout()
+                print("test")
         return QGraphicsItem.itemChange(self, change, value)
 
 
@@ -79,7 +85,39 @@ class SettingsPanel(QVBoxLayout):
 
     def __init__(self, *args, **kwargs):
         super(SettingsPanel, self).__init__(*args, **kwargs)
-        self.addWidget(QLabel("Test"))
+        self.main_widget = QWidget()
+        self.init_size()
+        self.addWidget(self.main_widget)
+
+    def init_size(self):
+        size = QDesktopWidget().availableGeometry(self.main_widget)
+        size.setHeight(int(size.height() * 0.3))
+        size.setWidth(int(size.width() * 0.3))
+        self.main_widget.setFixedSize(QSize(size.height(), size.width()))
+
+    def init_text_settings(self, text_item):
+        self.remove_layout()
+        layout = QVBoxLayout()
+        # capitalization
+        capitalization_layout = QHBoxLayout()
+        capitalization_layout.addWidget(QLabel("Capitalization"))
+        capitalization_combo_box = QComboBox()
+        capitalization_options = {"Not set": 0,
+                                  "All uppercase": 1,
+                                  "All lowercase": 2,
+                                  "Small caps": 3,
+                                  "Capitalize": 4}
+        for text, user_data in capitalization_options.items():
+            capitalization_combo_box.addItem(text, user_data)
+        capitalization_combo_box.setCurrentIndex(
+            text_item.font().capitalization())
+        capitalization_layout.addWidget(capitalization_combo_box)
+        layout.addLayout(capitalization_layout)
+        self.main_widget.setLayout(layout)
+
+    def remove_layout(self):
+        if self.main_widget.layout():
+            QWidget().setLayout(self.main_widget.layout())
 
 
 class MainLayout(QHBoxLayout):
@@ -89,7 +127,7 @@ class MainLayout(QHBoxLayout):
         self.images_panel = ImagesPanel()
         self.addLayout(self.images_panel)
         self.settings_panel = SettingsPanel()
-        self.addLayout(SettingsPanel())
+        self.addLayout(self.settings_panel)
 
 
 class MainWindow(QMainWindow):
@@ -152,7 +190,9 @@ class MainWindow(QMainWindow):
         text_item = CustomQGraphicsTextItem("Watermark")
         text_item.setFlags(QGraphicsTextItem.ItemIsSelectable |
                            QGraphicsTextItem.ItemIsMovable |
-                           QGraphicsTextItem.ItemSendsScenePositionChanges)
+                           QGraphicsTextItem.ItemSendsScenePositionChanges |
+                           QGraphicsTextItem.ItemIsFocusable)
+        text_item.setParent(self.main_layout.settings_panel)
         self.main_layout.images_panel.image_edit_area.scene().addItem(
             text_item)
 
