@@ -2,7 +2,7 @@ import os
 import time
 
 from PySide2.QtCore import Qt, QSize
-from PySide2.QtGui import QIcon, QPixmap
+from PySide2.QtGui import QIcon, QPixmap, QFont
 from PySide2.QtWidgets import QMainWindow, QApplication, QMenu, QVBoxLayout, \
     QAction, QFileDialog, QWidget, \
     QListWidget, QListView, QListWidgetItem, QGraphicsView, QGraphicsScene, \
@@ -26,7 +26,6 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 self.parent().init_text_settings(self)
             else:
                 self.parent().remove_layout()
-                print("test")
         return QGraphicsItem.itemChange(self, change, value)
 
 
@@ -102,15 +101,18 @@ class SettingsPanel(QVBoxLayout):
         capitalization_layout = QHBoxLayout()
         capitalization_layout.addWidget(QLabel("Capitalization"))
         capitalization_combo_box = QComboBox()
-        capitalization_options = {"Not set": 0,
-                                  "All uppercase": 1,
-                                  "All lowercase": 2,
-                                  "Small caps": 3,
-                                  "Capitalize": 4}
-        for text, user_data in capitalization_options.items():
-            capitalization_combo_box.addItem(text, user_data)
+        capitalization_options = ["Not set",
+                                  "All uppercase",
+                                  "All lowercase",
+                                  "Small caps",
+                                  "Capitalize"]
+        for option in capitalization_options:
+            capitalization_combo_box.addItem(option)
         capitalization_combo_box.setCurrentIndex(
             text_item.font().capitalization())
+        capitalization_combo_box\
+            .currentIndexChanged.connect(lambda x: self.set_text_capitalization(capitalization_combo_box.itemText(x),
+                                                self.parent().images_panel.image_edit_area.scene().selectedItems()[0]))
         capitalization_layout.addWidget(capitalization_combo_box)
         layout.addLayout(capitalization_layout)
         self.main_widget.setLayout(layout)
@@ -118,6 +120,17 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    @staticmethod
+    def set_text_capitalization(capitalization, text_item):
+        capitalization_options = {"Not set": QFont.MixedCase,
+                                  "All uppercase": QFont.AllUppercase,
+                                  "All lowercase": QFont.AllLowercase,
+                                  "Small caps": QFont.SmallCaps,
+                                  "Capitalize": QFont.Capitalize}
+        font = QFont()
+        font.setCapitalization(capitalization_options[capitalization])
+        text_item.setFont(font)
 
 
 class MainLayout(QHBoxLayout):
@@ -188,6 +201,7 @@ class MainWindow(QMainWindow):
 
     def add_text(self):
         text_item = CustomQGraphicsTextItem("Watermark")
+        text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
         text_item.setFlags(QGraphicsTextItem.ItemIsSelectable |
                            QGraphicsTextItem.ItemIsMovable |
                            QGraphicsTextItem.ItemSendsScenePositionChanges |
