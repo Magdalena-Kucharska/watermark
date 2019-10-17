@@ -1,13 +1,13 @@
 import os
 import time
 
-from PySide2.QtCore import Qt, QSize
+from PySide2.QtCore import Qt, QSize, QEvent
 from PySide2.QtGui import QIcon, QPixmap, QFont
 from PySide2.QtWidgets import QMainWindow, QApplication, QMenu, QVBoxLayout, \
     QAction, QFileDialog, QWidget, \
     QListWidget, QListView, QListWidgetItem, QGraphicsView, QGraphicsScene, \
     QDesktopWidget, QLabel, QHBoxLayout, QProgressDialog, QGraphicsTextItem, \
-    QGraphicsItem, QComboBox
+    QGraphicsItem, QComboBox, QGraphicsSceneMouseEvent
 
 
 class CustomQGraphicsTextItem(QGraphicsTextItem):
@@ -25,8 +25,23 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
             if value:
                 self.parent().init_text_settings(self)
             else:
+                cursor = self.textCursor()
+                cursor.clearSelection()
+                self.setTextCursor(cursor)
                 self.parent().remove_layout()
+                self.setTextInteractionFlags(Qt.NoTextInteraction)
         return QGraphicsItem.itemChange(self, change, value)
+
+    def mouseDoubleClickEvent(self, event):
+        if self.textInteractionFlags() == Qt.TextEditorInteraction:
+            super(CustomQGraphicsTextItem, self).mouseDoubleClickEvent(event)
+            return
+        self.setTextInteractionFlags(Qt.TextEditorInteraction)
+        self.setFocus(Qt.MouseFocusReason)
+        click = QGraphicsSceneMouseEvent(QEvent.GraphicsSceneMousePress)
+        click.setButton(event.button())
+        click.setPos(event.pos())
+        self.mousePressEvent(click)
 
 
 class ImagesNav(QListWidget):
@@ -110,9 +125,10 @@ class SettingsPanel(QVBoxLayout):
             capitalization_combo_box.addItem(option)
         capitalization_combo_box.setCurrentIndex(
             text_item.font().capitalization())
-        capitalization_combo_box\
+        capitalization_combo_box \
             .currentIndexChanged.connect(lambda x: self.set_text_capitalization(capitalization_combo_box.itemText(x),
-                                                self.parent().images_panel.image_edit_area.scene().selectedItems()[0]))
+                                                                                self.parent().images_panel.image_edit_area.scene().selectedItems()[
+                                                                                    0]))
         capitalization_layout.addWidget(capitalization_combo_box)
         layout.addLayout(capitalization_layout)
         self.main_widget.setLayout(layout)
@@ -128,7 +144,7 @@ class SettingsPanel(QVBoxLayout):
                                   "All lowercase": QFont.AllLowercase,
                                   "Small caps": QFont.SmallCaps,
                                   "Capitalize": QFont.Capitalize}
-        font = QFont()
+        font = text_item.font()
         font.setCapitalization(capitalization_options[capitalization])
         text_item.setFont(font)
 
@@ -201,7 +217,7 @@ class MainWindow(QMainWindow):
 
     def add_text(self):
         text_item = CustomQGraphicsTextItem("Watermark")
-        text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
+        text_item.setTextInteractionFlags(Qt.NoTextInteraction)
         text_item.setFlags(QGraphicsTextItem.ItemIsSelectable |
                            QGraphicsTextItem.ItemIsMovable |
                            QGraphicsTextItem.ItemSendsScenePositionChanges |
