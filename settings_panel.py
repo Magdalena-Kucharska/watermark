@@ -1,7 +1,7 @@
 from PySide2.QtCore import QSize
-from PySide2.QtGui import QFont
+from PySide2.QtGui import QFont, QFontDatabase
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QDesktopWidget, \
-    QHBoxLayout, QLabel, QComboBox
+    QHBoxLayout, QLabel, QComboBox, QGroupBox
 
 
 class SettingsPanel(QVBoxLayout):
@@ -20,15 +20,38 @@ class SettingsPanel(QVBoxLayout):
 
     def init_text_settings(self, text_item):
         self.remove_layout()
-        layout = QVBoxLayout()
+        font_layout = QVBoxLayout()
         # capitalization
-        layout.addLayout(self.init_capitalization_layout(text_item))
-        layout.addLayout(self.init_stretch_layout(text_item))
+        font_layout.addLayout(self.init_capitalization_layout(text_item))
+        font_layout.addLayout(self.init_stretch_layout(text_item))
+        font_layout.addLayout(self.init_families_layout(text_item))
+        font_group_box = QGroupBox("Font")
+        font_group_box.setLayout(font_layout)
+        layout = QVBoxLayout()
+        layout.addWidget(font_group_box)
         self.main_widget.setLayout(layout)
 
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_families_layout(self, text_item):
+        families_layout = QHBoxLayout()
+        families_layout.addWidget(QLabel("Family"))
+        families_combo_box = QComboBox()
+        families_list = QFontDatabase().families()
+        for family in families_list:
+            families_combo_box.addItem(family)
+        families_combo_box.setCurrentText(text_item.font().family())
+        selected_text_item = \
+            self.parent().images_panel.image_edit_area.scene().selectedItems()[
+                0]
+        families_combo_box.currentTextChanged.connect(lambda x:
+                                                      self.set_font_family(
+                                                          x,
+                                                          selected_text_item))
+        families_layout.addWidget(families_combo_box)
+        return families_layout
 
     def init_capitalization_layout(self, text_item):
         capitalization_layout = QHBoxLayout()
@@ -81,6 +104,12 @@ class SettingsPanel(QVBoxLayout):
                                                           selected_text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_font_family(family, text_item):
+        font = text_item.font()
+        font.setFamily(family)
+        text_item.setFont(font)
 
     @staticmethod
     def set_text_stretch(stretch, text_item):
