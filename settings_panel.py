@@ -1,7 +1,7 @@
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QFont, QFontDatabase
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QDesktopWidget, \
-    QHBoxLayout, QLabel, QComboBox, QGroupBox
+    QHBoxLayout, QLabel, QComboBox, QGroupBox, QCheckBox
 
 
 class SettingsPanel(QVBoxLayout):
@@ -25,6 +25,7 @@ class SettingsPanel(QVBoxLayout):
         font_layout.addLayout(self.init_capitalization_layout(text_item))
         font_layout.addLayout(self.init_stretch_layout(text_item))
         font_layout.addLayout(self.init_families_layout(text_item))
+        font_layout.addWidget(self.init_kerning_widget(text_item))
         font_group_box = QGroupBox("Font")
         font_group_box.setLayout(font_layout)
         layout = QVBoxLayout()
@@ -34,6 +35,16 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_kerning_widget(self, text_item):
+        kerning_widget = QCheckBox("Kerning")
+        kerning_widget.setChecked(text_item.font().kerning())
+        selected_text_item = \
+            self.parent().images_panel.image_edit_area.scene().selectedItems()[
+                0]
+        kerning_widget.stateChanged.connect(lambda x: self.set_text_kerning(
+            x, selected_text_item))
+        return kerning_widget
 
     def init_families_layout(self, text_item):
         families_layout = QHBoxLayout()
@@ -104,6 +115,12 @@ class SettingsPanel(QVBoxLayout):
                                                           selected_text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_text_kerning(kerning, text_item):
+        font = text_item.font()
+        font.setKerning(kerning)
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_family(family, text_item):
