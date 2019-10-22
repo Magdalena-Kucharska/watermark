@@ -1,7 +1,7 @@
 from PySide2.QtCore import QSize
-from PySide2.QtGui import QFont, QFontDatabase
+from PySide2.QtGui import QFont, QFontDatabase, QIntValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QDesktopWidget, \
-    QHBoxLayout, QLabel, QComboBox, QGroupBox, QCheckBox
+    QHBoxLayout, QLabel, QComboBox, QGroupBox, QCheckBox, QLineEdit
 
 
 class SettingsPanel(QVBoxLayout):
@@ -21,11 +21,11 @@ class SettingsPanel(QVBoxLayout):
     def init_text_settings(self, text_item):
         self.remove_layout()
         font_layout = QVBoxLayout()
-        # capitalization
         font_layout.addLayout(self.init_capitalization_layout(text_item))
         font_layout.addLayout(self.init_stretch_layout(text_item))
         font_layout.addLayout(self.init_families_layout(text_item))
         font_layout.addWidget(self.init_kerning_widget(text_item))
+        font_layout.addLayout(self.init_letter_spacing_layout(text_item))
         font_group_box = QGroupBox("Font")
         font_group_box.setLayout(font_layout)
         layout = QVBoxLayout()
@@ -35,6 +35,47 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_letter_spacing_layout(self, text_item):
+        letter_spacing_layout = QHBoxLayout()
+        letter_spacing_layout.addWidget(QLabel("Letter spacing"))
+        letter_spacing_combo_box = QComboBox()
+        spacing_input = QLineEdit()
+        selected_text_item = \
+            self.parent().images_panel.image_edit_area.scene().selectedItems()[
+                0]
+
+        letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
+                                QFont.AbsoluteSpacing: "Absolute spacing"}
+        for type in letter_spacing_types.values():
+            letter_spacing_combo_box.addItem(type)
+        current_spacing_type = text_item.font().letterSpacingType()
+        letter_spacing_combo_box.setCurrentText(
+            letter_spacing_types[current_spacing_type])
+        letter_spacing_combo_box.currentTextChanged.connect(lambda:
+                                                            self.set_letter_spacing_type(
+                                                                selected_text_item,
+                                                                letter_spacing_combo_box,
+                                                                spacing_input,
+                                                                units_label))
+
+        letter_spacing_layout.addWidget(letter_spacing_combo_box)
+
+        spacing_input.setValidator(QIntValidator(-10000, 10000))
+        spacing_input.setText(str(int(text_item.font().letterSpacing())))
+        spacing_input.returnPressed.connect(lambda:
+                                            self.set_letter_spacing_type(
+                                                selected_text_item,
+                                                letter_spacing_combo_box,
+                                                spacing_input))
+        letter_spacing_layout.addWidget(spacing_input)
+        units_label = QLabel()
+        if current_spacing_type == QFont.PercentageSpacing:
+            units_label.setText("%")
+        else:
+            units_label.setText("px")
+        letter_spacing_layout.addWidget(units_label)
+        return letter_spacing_layout
 
     def init_kerning_widget(self, text_item):
         kerning_widget = QCheckBox("Kerning")
@@ -115,6 +156,21 @@ class SettingsPanel(QVBoxLayout):
                                                           selected_text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_letter_spacing_type(text_item, combo_box, input, units_label=None):
+        font = text_item.font()
+        spacing_types = {"Percentage spacing": QFont.PercentageSpacing,
+                         "Absolute spacing": QFont.AbsoluteSpacing}
+        spacing_type = combo_box.currentText()
+        spacing = int(input.text())
+        font.setLetterSpacing(spacing_types[spacing_type], spacing)
+        text_item.setFont(font)
+        if units_label:
+            if spacing_type == "Percentage spacing":
+                units_label.setText("%")
+            else:
+                units_label.setText("px")
 
     @staticmethod
     def set_text_kerning(kerning, text_item):
