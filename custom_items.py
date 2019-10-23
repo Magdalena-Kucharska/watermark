@@ -16,7 +16,10 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 return value
         if change == self.ItemSelectedHasChanged:
             if value:
-                self.parent().init_text_settings(self)
+                if len(self.scene().selectedItems()) == 1:
+                    self.parent().init_font_settings(self)
+                else:
+                    self.parent().remove_layout()
             else:
                 cursor = self.textCursor()
                 cursor.clearSelection()
