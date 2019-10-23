@@ -23,9 +23,10 @@ class SettingsPanel(QVBoxLayout):
         font_layout = QVBoxLayout()
         font_layout.addLayout(self.init_capitalization_layout(text_item))
         font_layout.addLayout(self.init_stretch_layout(text_item))
-        font_layout.addLayout(self.init_families_layout(text_item))
+        font_layout.addLayout(self.init_font_families_layout(text_item))
         font_layout.addWidget(self.init_kerning_widget(text_item))
         font_layout.addWidget(self.init_overline_widget(text_item))
+        font_layout.addWidget(self.init_strikeout_widget(text_item))
         font_layout.addWidget(self.init_underline_widget(text_item))
         font_layout.addLayout(self.init_letter_spacing_layout(text_item))
         font_group_box = QGroupBox("Font")
@@ -37,6 +38,14 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_strikeout_widget(self, text_item):
+        strikeout_checkbox = QCheckBox("Strikeout")
+        strikeout_checkbox.setChecked(text_item.font().strikeOut())
+        strikeout_checkbox.stateChanged.connect(lambda x:
+                                                self.set_font_strikeout(x,
+                                                                        text_item))
+        return strikeout_checkbox
 
     def init_underline_widget(self, text_item):
         underline_checkbox = QCheckBox("Underline")
@@ -104,7 +113,7 @@ class SettingsPanel(QVBoxLayout):
             x, text_item))
         return kerning_widget
 
-    def init_families_layout(self, text_item):
+    def init_font_families_layout(self, text_item):
         families_layout = QHBoxLayout()
         families_layout.addWidget(QLabel("Family"))
         families_combo_box = QComboBox()
@@ -164,6 +173,12 @@ class SettingsPanel(QVBoxLayout):
                                                           text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_font_strikeout(strikeout, text_item):
+        font = text_item.font()
+        font.setStrikeOut(strikeout)
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_underline(underline, text_item):
