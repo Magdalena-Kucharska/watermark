@@ -18,7 +18,7 @@ class SettingsPanel(QVBoxLayout):
         size.setWidth(int(size.width() * 0.3))
         self.main_widget.setFixedSize(QSize(size.height(), size.width()))
 
-    def init_text_settings(self, text_item):
+    def init_font_settings(self, text_item):
         self.remove_layout()
         font_layout = QVBoxLayout()
         font_layout.addLayout(self.init_capitalization_layout(text_item))
@@ -40,12 +40,9 @@ class SettingsPanel(QVBoxLayout):
     def init_overline_widget(self, text_item):
         overline_checkbox = QCheckBox("Overline")
         overline_checkbox.setChecked(text_item.font().overline())
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
         overline_checkbox.stateChanged.connect(lambda x:
                                                self.set_font_overline(x,
-                                                                      selected_text_item))
+                                                                      text_item))
         return overline_checkbox
 
     def init_letter_spacing_layout(self, text_item):
@@ -97,11 +94,8 @@ class SettingsPanel(QVBoxLayout):
     def init_kerning_widget(self, text_item):
         kerning_widget = QCheckBox("Kerning")
         kerning_widget.setChecked(text_item.font().kerning())
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
         kerning_widget.stateChanged.connect(lambda x: self.set_text_kerning(
-            x, selected_text_item))
+            x, text_item))
         return kerning_widget
 
     def init_families_layout(self, text_item):
@@ -112,13 +106,10 @@ class SettingsPanel(QVBoxLayout):
         for family in families_list:
             families_combo_box.addItem(family)
         families_combo_box.setCurrentText(text_item.font().family())
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
         families_combo_box.currentTextChanged.connect(lambda x:
                                                       self.set_font_family(
                                                           x,
-                                                          selected_text_item))
+                                                          text_item))
         families_layout.addWidget(families_combo_box)
         return families_layout
 
@@ -135,12 +126,9 @@ class SettingsPanel(QVBoxLayout):
             capitalization_combo_box.addItem(option)
         capitalization_combo_box.setCurrentIndex(
             text_item.font().capitalization())
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
         capitalization_combo_box.currentIndexChanged.connect(
             lambda x: self.set_text_capitalization(
-                capitalization_combo_box.itemText(x), selected_text_item))
+                capitalization_combo_box.itemText(x), text_item))
         capitalization_layout.addWidget(capitalization_combo_box)
         return capitalization_layout
 
@@ -163,14 +151,11 @@ class SettingsPanel(QVBoxLayout):
         stretch_combo_box.setCurrentText(stretch_options[text_item.font(
 
         ).stretch()])
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
         stretch_combo_box.currentIndexChanged.connect(lambda x:
                                                       self.set_text_stretch(
                                                           stretch_combo_box.itemText(
                                                               x),
-                                                          selected_text_item))
+                                                          text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
 
