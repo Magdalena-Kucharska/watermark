@@ -25,6 +25,7 @@ class SettingsPanel(QVBoxLayout):
         font_layout.addLayout(self.init_stretch_layout(text_item))
         font_layout.addLayout(self.init_families_layout(text_item))
         font_layout.addWidget(self.init_kerning_widget(text_item))
+        font_layout.addWidget(self.init_overline_widget(text_item))
         font_layout.addLayout(self.init_letter_spacing_layout(text_item))
         font_group_box = QGroupBox("Font")
         font_group_box.setLayout(font_layout)
@@ -35,6 +36,17 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_overline_widget(self, text_item):
+        overline_checkbox = QCheckBox("Overline")
+        overline_checkbox.setChecked(text_item.font().overline())
+        selected_text_item = \
+            self.parent().images_panel.image_edit_area.scene().selectedItems()[
+                0]
+        overline_checkbox.stateChanged.connect(lambda x:
+                                               self.set_font_overline(x,
+                                                                      selected_text_item))
+        return overline_checkbox
 
     def init_letter_spacing_layout(self, text_item):
         letter_spacing_layout = QHBoxLayout()
@@ -161,6 +173,12 @@ class SettingsPanel(QVBoxLayout):
                                                           selected_text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_font_overline(overline, text_item):
+        font = text_item.font()
+        font.setOverline(overline)
+        text_item.setFont(font)
 
     @staticmethod
     def set_letter_spacing_type(text_item, letter_spacing_type,
