@@ -59,9 +59,6 @@ class SettingsPanel(QVBoxLayout):
         letter_spacing_layout.addWidget(QLabel("Letter spacing"))
         letter_spacing_type_combo_box = QComboBox()
         letter_spacing_value_input = QLineEdit()
-        selected_text_item = \
-            self.parent().images_panel.image_edit_area.scene().selectedItems()[
-                0]
 
         letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
                                 QFont.AbsoluteSpacing: "Absolute spacing"}
@@ -72,7 +69,7 @@ class SettingsPanel(QVBoxLayout):
             letter_spacing_types[current_spacing_type])
         letter_spacing_type_combo_box.currentTextChanged.connect(lambda x:
                                                                  self.set_letter_spacing_type(
-                                                                     selected_text_item,
+                                                                     text_item,
                                                                      x,
                                                                      letter_spacing_value_input,
                                                                      units_label))
@@ -88,7 +85,7 @@ class SettingsPanel(QVBoxLayout):
             letter_spacing_value_input.setText(current_spacing)
         letter_spacing_value_input.returnPressed.connect(lambda:
                                                          self.set_letter_spacing_value(
-                                                             selected_text_item,
+                                                             text_item,
                                                              letter_spacing_type_combo_box,
                                                              letter_spacing_value_input))
         letter_spacing_layout.addWidget(letter_spacing_value_input)
