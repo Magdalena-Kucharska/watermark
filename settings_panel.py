@@ -26,6 +26,7 @@ class SettingsPanel(QVBoxLayout):
         font_layout.addLayout(self.init_families_layout(text_item))
         font_layout.addWidget(self.init_kerning_widget(text_item))
         font_layout.addWidget(self.init_overline_widget(text_item))
+        font_layout.addWidget(self.init_underline_widget(text_item))
         font_layout.addLayout(self.init_letter_spacing_layout(text_item))
         font_group_box = QGroupBox("Font")
         font_group_box.setLayout(font_layout)
@@ -36,6 +37,14 @@ class SettingsPanel(QVBoxLayout):
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+
+    def init_underline_widget(self, text_item):
+        underline_checkbox = QCheckBox("Underline")
+        underline_checkbox.setChecked(text_item.font().underline())
+        underline_checkbox.stateChanged.connect(lambda x:
+                                                self.set_font_underline(x,
+                                                                        text_item))
+        return underline_checkbox
 
     def init_overline_widget(self, text_item):
         overline_checkbox = QCheckBox("Overline")
@@ -158,6 +167,12 @@ class SettingsPanel(QVBoxLayout):
                                                           text_item))
         stretch_layout.addWidget(stretch_combo_box)
         return stretch_layout
+
+    @staticmethod
+    def set_font_underline(underline, text_item):
+        font = text_item.font()
+        font.setUnderline(underline)
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_overline(overline, text_item):
