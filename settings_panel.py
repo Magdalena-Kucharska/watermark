@@ -1,7 +1,7 @@
-from PySide2.QtCore import QSize
 from PySide2.QtGui import QFont, QFontDatabase, QIntValidator
-from PySide2.QtWidgets import QVBoxLayout, QWidget, QDesktopWidget, \
-    QHBoxLayout, QLabel, QComboBox, QGroupBox, QCheckBox, QLineEdit
+from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
+    QComboBox, QGroupBox, QCheckBox, QLineEdit, \
+    QSizePolicy
 
 
 class SettingsPanel(QVBoxLayout):
@@ -9,14 +9,9 @@ class SettingsPanel(QVBoxLayout):
     def __init__(self, *args, **kwargs):
         super(SettingsPanel, self).__init__(*args, **kwargs)
         self.main_widget = QWidget()
-        self.init_size()
+        self.main_widget.setSizePolicy(QSizePolicy.Maximum,
+                                       QSizePolicy.Maximum)
         self.addWidget(self.main_widget)
-
-    def init_size(self):
-        size = QDesktopWidget().availableGeometry(self.main_widget)
-        size.setHeight(int(size.height() * 0.3))
-        size.setWidth(int(size.width() * 0.3))
-        self.main_widget.setFixedSize(QSize(size.height(), size.width()))
 
     def init_font_settings(self, text_item):
         self.remove_layout()
