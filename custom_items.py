@@ -20,6 +20,8 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                     self.parent().init_font_settings(self)
                 else:
                     self.parent().remove_layout()
+                    self.parent().hide()
+                    self.parent().parent().images_panel.images_nav.show()
             else:
                 cursor = self.textCursor()
                 cursor.clearSelection()

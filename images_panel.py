@@ -3,7 +3,7 @@ import os
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import QPixmap, QIcon
 from PySide2.QtWidgets import QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QVBoxLayout, QGraphicsView, QGraphicsScene
+    QListWidgetItem, QGraphicsView, QGraphicsScene, QHBoxLayout
 
 
 class ImagesNav(QListWidget):
@@ -11,14 +11,14 @@ class ImagesNav(QListWidget):
     def __init__(self, *args, **kwargs):
         super(ImagesNav, self).__init__(*args, **kwargs)
         self.loaded_images = None
-        self.setFlow(QListView.LeftToRight)
-        self.setWrapping(False)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setViewMode(QListView.IconMode)
         self.setIconSize(QSize(128, 128))
         self.setResizeMode(QListView.Adjust)
-        self.setFixedHeight(160)
+        self.setFixedWidth(160)
+        self.setGridSize(QSize(128, 150))
+        self.setItemAlignment(Qt.AlignHCenter)
 
     def update_navbar(self):
         self.clear()
@@ -38,7 +38,7 @@ class ImagesNav(QListWidget):
         progress.setValue(len(self.loaded_images))
 
 
-class ImagesPanel(QVBoxLayout):
+class ImagesPanel(QHBoxLayout):
     def __init__(self, *args, **kwargs):
         super(ImagesPanel, self).__init__(*args, **kwargs)
         self.images_nav = ImagesNav()
@@ -46,8 +46,8 @@ class ImagesPanel(QVBoxLayout):
             self.images_nav.currentItem().data(Qt.UserRole)))
         self.image_edit_area = QGraphicsView()
         self.image_edit_area.setScene(QGraphicsScene())
-        self.addWidget(self.images_nav)
         self.addWidget(self.image_edit_area)
+        self.addWidget(self.images_nav)
 
     def load_image(self, image_path):
         self.image_edit_area.scene().clear()

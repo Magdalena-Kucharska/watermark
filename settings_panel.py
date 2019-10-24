@@ -15,6 +15,7 @@ class SettingsPanel(QVBoxLayout):
 
     def init_font_settings(self, text_item):
         self.remove_layout()
+        self.main_widget.setFixedWidth(160)
         font_layout = QVBoxLayout()
         font_layout.addLayout(self.init_capitalization_layout(text_item))
         font_layout.addLayout(self.init_stretch_layout(text_item))
@@ -29,10 +30,14 @@ class SettingsPanel(QVBoxLayout):
         layout = QVBoxLayout()
         layout.addWidget(font_group_box)
         self.main_widget.setLayout(layout)
+        self.parent().images_panel.images_nav.hide()
+        self.main_widget.show()
 
     def remove_layout(self):
         if self.main_widget.layout():
             QWidget().setLayout(self.main_widget.layout())
+            self.main_widget.hide()
+            self.parent().images_panel.images_nav.show()
 
     def init_strikeout_widget(self, text_item):
         strikeout_checkbox = QCheckBox("Strikeout")
@@ -59,7 +64,7 @@ class SettingsPanel(QVBoxLayout):
         return overline_checkbox
 
     def init_letter_spacing_layout(self, text_item):
-        letter_spacing_layout = QHBoxLayout()
+        letter_spacing_layout = QVBoxLayout()
         letter_spacing_layout.addWidget(QLabel("Letter spacing"))
         letter_spacing_type_combo_box = QComboBox()
         letter_spacing_value_input = QLineEdit()
@@ -92,13 +97,15 @@ class SettingsPanel(QVBoxLayout):
                                                              text_item,
                                                              letter_spacing_type_combo_box,
                                                              letter_spacing_value_input))
-        letter_spacing_layout.addWidget(letter_spacing_value_input)
+        letter_spacing_value_input_layout = QHBoxLayout()
+        letter_spacing_value_input_layout.addWidget(letter_spacing_value_input)
         units_label = QLabel()
         if current_spacing_type == QFont.PercentageSpacing:
             units_label.setText("%")
         else:
             units_label.setText("px")
-        letter_spacing_layout.addWidget(units_label)
+        letter_spacing_value_input_layout.addWidget(units_label)
+        letter_spacing_layout.addLayout(letter_spacing_value_input_layout)
         return letter_spacing_layout
 
     def init_kerning_widget(self, text_item):
@@ -109,7 +116,7 @@ class SettingsPanel(QVBoxLayout):
         return kerning_widget
 
     def init_font_families_layout(self, text_item):
-        families_layout = QHBoxLayout()
+        families_layout = QVBoxLayout()
         families_layout.addWidget(QLabel("Family"))
         families_combo_box = QComboBox()
         families_list = QFontDatabase().families()
@@ -124,7 +131,7 @@ class SettingsPanel(QVBoxLayout):
         return families_layout
 
     def init_capitalization_layout(self, text_item):
-        capitalization_layout = QHBoxLayout()
+        capitalization_layout = QVBoxLayout()
         capitalization_layout.addWidget(QLabel("Capitalization"))
         capitalization_combo_box = QComboBox()
         capitalization_options = ["Not set",
@@ -143,7 +150,7 @@ class SettingsPanel(QVBoxLayout):
         return capitalization_layout
 
     def init_stretch_layout(self, text_item):
-        stretch_layout = QHBoxLayout()
+        stretch_layout = QVBoxLayout()
         stretch_layout.addWidget(QLabel("Stretch"))
         stretch_combo_box = QComboBox()
         stretch_options = {0: "Not set",
