@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QGraphicsScene
 
 from custom_items import CustomQGraphicsTextItem
-from settings_panel import Sidebar
+from sidebar import Sidebar
 
 
 class MainLayout(QHBoxLayout):
