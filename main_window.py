@@ -1,12 +1,11 @@
-import time
-
 from PySide2.QtCore import Qt
+from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
-    QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem
+    QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
+    QGraphicsScene
 
 from custom_items import CustomQGraphicsTextItem
-from images_panel import ImageEditor
 from settings_panel import Sidebar
 
 
@@ -14,16 +13,85 @@ class MainLayout(QHBoxLayout):
 
     def __init__(self, *args, **kwargs):
         super(MainLayout, self).__init__(*args, **kwargs)
-        self.image_editor = ImageEditor()
+        self.image_editor = QGraphicsView()
+        self.image_editor.setScene(QGraphicsScene())
         self.addWidget(self.image_editor)
         self.sidebar = Sidebar()
+        self.sidebar.navigation.currentItemChanged.connect(lambda:
+                                                           self.load_image(
+                                                               self.sidebar.navigation.currentItem().data(
+                                                                   Qt.UserRole)))
         self.addWidget(self.sidebar)
+
+    def load_image(self, image_path):
+        self.image_editor.scene().clear()
+        image = QPixmap(image_path)
+        self.image_editor.scene().addPixmap(image)
+        self.image_editor.scene().setSceneRect(self.image_editor.scene(
+        ).itemsBoundingRect())
+
+
+class Menus:
+
+    def __init__(self):
+        self.menu_file = QMenu("File")
+        self.action_open = QAction("Open...", self.menu_file)
+        self.menu_file.addAction(self.action_open)
+        self.action_save_as = QAction("Save as...")
+        self.action_save_as.setEnabled(False)
+        self.menu_file.addAction(self.action_save_as)
+
+        self.menu_watermark = QMenu("Watermark")
+
+        self.menu_visible = QMenu("Visible")
+
+        self.action_add_text = QAction("Add text", self.menu_visible)
+        self.menu_visible.addAction(self.action_add_text)
+        self.action_add_image = QAction("Add image", self.menu_visible)
+        self.menu_visible.addAction(self.action_add_image)
+
+        self.menu_visible.setEnabled(False)
+
+        self.menu_invisible = QMenu("Invisible")
+        self.action_encode = QAction("Encode invisible watermark",
+                                     self.menu_invisible)
+        self.action_decode = QAction("Decode invisible watermark",
+                                     self.menu_invisible)
+        self.menu_invisible.addAction(self.action_encode)
+        self.menu_invisible.addAction(self.action_decode)
+        self.menu_invisible.setEnabled(False)
+
+        self.menu_presets = QMenu("Presets")
+
+        self.action_save_preset = QAction("Save current watermark as "
+                                          "preset", self.menu_presets)
+        self.action_save_preset.setEnabled(False)
+        self.menu_presets.addAction(self.action_save_preset)
+        self.action_manage_presets = QAction("Manage presets",
+                                             self.menu_presets)
+        self.menu_presets.addAction(self.action_manage_presets)
+
+        self.menu_apply_preset = QMenu("Apply preset")
+        self.action_apply_preset_current = QAction("To current image",
+                                                   self.menu_apply_preset)
+        self.menu_apply_preset.addAction(self.action_apply_preset_current)
+        self.menu_presets.addMenu(self.menu_apply_preset)
+        self.action_apply_preset_all = QAction("To all loaded "
+                                               "images",
+                                               self.menu_apply_preset)
+        self.menu_apply_preset.addAction(self.action_apply_preset_all)
+        self.menu_apply_preset.setEnabled(False)
+
+        self.menu_watermark.addMenu(self.menu_visible)
+        self.menu_watermark.addMenu(self.menu_invisible)
+        self.menu_watermark.addMenu(self.menu_presets)
 
 
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.menus = Menus()
         self.main_layout = MainLayout()
         self.central_widget = QWidget()
         self.central_widget.setLayout(self.main_layout)
@@ -35,16 +103,10 @@ class MainWindow(QMainWindow):
         self.init_size()
 
     def init_menu(self):
-        file_menu = QMenu("File")
-        open_action = QAction("Open...", file_menu)
-        open_action.triggered.connect(self.open_file)
-        file_menu.addAction(open_action)
-        self.menuBar().addMenu(file_menu)
-        watermark_menu = QMenu("Watermark")
-        add_text_action = QAction("Add text", watermark_menu)
-        add_text_action.triggered.connect(self.add_text)
-        watermark_menu.addAction(add_text_action)
-        self.menuBar().addMenu(watermark_menu)
+        self.menus.action_open.triggered.connect(self.open_file)
+        self.menuBar().addMenu(self.menus.menu_file)
+        self.menus.action_add_text.triggered.connect(self.add_text)
+        self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
         self.statusBar()
@@ -67,12 +129,16 @@ class MainWindow(QMainWindow):
                    "*.xpm *.XPM)")
         files_number = len(loaded_images[0])
         if files_number > 0:
-            t1 = time.time()
             self.main_layout.sidebar.navigation.loaded_images = \
                 loaded_images[0]
             self.main_layout.sidebar.navigation.update_navbar()
             self.status_message.setText(f"Loaded {files_number} files.")
-            print(time.time() - t1)
+            self.main_layout.sidebar.navigation.setCurrentRow(0)
+            self.menus.menu_visible.setEnabled(True)
+            self.menus.menu_invisible.setEnabled(True)
+            self.menus.menu_apply_preset.setEnabled(True)
+            self.menus.action_save_as.setEnabled(True)
+            self.menus.action_save_preset.setEnabled(True)
         else:
             self.status_message.setText("Opening files canceled.")
 
@@ -83,6 +149,5 @@ class MainWindow(QMainWindow):
                            QGraphicsTextItem.ItemIsMovable |
                            QGraphicsTextItem.ItemSendsScenePositionChanges |
                            QGraphicsTextItem.ItemIsFocusable)
-        text_item.setParent(self.main_layout.settings_panel)
-        self.main_layout.images_panel.image_edit_area.scene().addItem(
-            text_item)
+        text_item.setParent(self.main_layout.sidebar)
+        self.main_layout.image_editor.scene().addItem(text_item)

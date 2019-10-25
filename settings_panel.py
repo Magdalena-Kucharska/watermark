@@ -1,7 +1,7 @@
 import os
 
-from PySide2.QtCore import QSize, Qt
-from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QPixmap, QIcon
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QFont, QFontDatabase, QIntValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
@@ -15,11 +15,7 @@ class ImagesNav(QListWidget):
         self.loaded_images = None
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.setViewMode(QListView.IconMode)
-        self.setIconSize(QSize(128, 128))
         self.setResizeMode(QListView.Adjust)
-        self.setGridSize(QSize(128, 160))
-        # self.setMaximumSize(200, 1000)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
 
     def update_navbar(self):
@@ -32,8 +28,7 @@ class ImagesNav(QListWidget):
             progress.setValue(i)
             if progress.wasCanceled():
                 break
-            scaled_image = QPixmap(image_path).scaled(QSize(128, 128))
-            item = QListWidgetItem(QIcon(scaled_image), os.path.basename(
+            item = QListWidgetItem(os.path.basename(
                 image_path))
             item.setData(Qt.UserRole, image_path)
             self.addItem(item)
@@ -44,10 +39,6 @@ class Sidebar(QWidget):
 
     def __init__(self, *args, **kwargs):
         super(Sidebar, self).__init__(*args, **kwargs)
-        # self.main_widget = QWidget()
-        # self.setSizePolicy(QSizePolicy.Maximum,
-        #                                QSizePolicy.Maximum)
-        # self.addWidget(self.main_widget)
         self.settings = QWidget()
         self.navigation = ImagesNav()
         self.layout = QStackedLayout()
@@ -56,36 +47,32 @@ class Sidebar(QWidget):
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         self.setLayout(self.layout)
         self.layout.setCurrentWidget(self.navigation)
-        # self.setSizeConstraint(QStackedLayout.SetFixedSize)
-
-    # def sizeHint(self):
-    #     return self.currentWidget().sizeHint()
 
     def init_font_settings(self, text_item):
         self.remove_layout()
-        self.main_widget.setFixedWidth(160)
         font_layout = QVBoxLayout()
-        font_layout.addLayout(self.init_capitalization_layout(text_item))
-        font_layout.addLayout(self.init_stretch_layout(text_item))
-        font_layout.addLayout(self.init_font_families_layout(text_item))
+        font_layout.setAlignment(Qt.AlignTop)
+        font_layout.addWidget(QLabel("Family"))
+        font_layout.addWidget(self.init_font_families_widget(text_item))
+        font_layout.addWidget(QLabel("Capitalization"))
+        font_layout.addWidget(self.init_capitalization_widget(text_item))
+        font_layout.addWidget(QLabel("Stretch"))
+        font_layout.addWidget(self.init_stretch_layout(text_item))
         font_layout.addWidget(self.init_kerning_widget(text_item))
         font_layout.addWidget(self.init_overline_widget(text_item))
         font_layout.addWidget(self.init_strikeout_widget(text_item))
         font_layout.addWidget(self.init_underline_widget(text_item))
-        font_layout.addLayout(self.init_letter_spacing_layout(text_item))
+        font_layout.addWidget(self.init_letter_spacing_widget(text_item))
         font_group_box = QGroupBox("Font")
         font_group_box.setLayout(font_layout)
         layout = QVBoxLayout()
         layout.addWidget(font_group_box)
-        self.main_widget.setLayout(layout)
-        self.parent().images_panel.images_nav.hide()
-        self.main_widget.show()
+        self.settings.setLayout(layout)
+        self.layout.setCurrentWidget(self.settings)
 
     def remove_layout(self):
-        if self.main_widget.layout():
+        if self.settings.layout():
             QWidget().setLayout(self.main_widget.layout())
-            self.main_widget.hide()
-            self.parent().images_panel.images_nav.show()
 
     def init_strikeout_widget(self, text_item):
         strikeout_checkbox = QCheckBox("Strikeout")
@@ -111,9 +98,8 @@ class Sidebar(QWidget):
                                                                       text_item))
         return overline_checkbox
 
-    def init_letter_spacing_layout(self, text_item):
+    def init_letter_spacing_widget(self, text_item):
         letter_spacing_layout = QVBoxLayout()
-        letter_spacing_layout.addWidget(QLabel("Letter spacing"))
         letter_spacing_type_combo_box = QComboBox()
         letter_spacing_value_input = QLineEdit()
 
@@ -154,7 +140,9 @@ class Sidebar(QWidget):
             units_label.setText("px")
         letter_spacing_value_input_layout.addWidget(units_label)
         letter_spacing_layout.addLayout(letter_spacing_value_input_layout)
-        return letter_spacing_layout
+        letter_spacing_group_box = QGroupBox("Letter spacing")
+        letter_spacing_group_box.setLayout(letter_spacing_layout)
+        return letter_spacing_group_box
 
     def init_kerning_widget(self, text_item):
         kerning_widget = QCheckBox("Kerning")
@@ -163,9 +151,7 @@ class Sidebar(QWidget):
             x, text_item))
         return kerning_widget
 
-    def init_font_families_layout(self, text_item):
-        families_layout = QVBoxLayout()
-        families_layout.addWidget(QLabel("Family"))
+    def init_font_families_widget(self, text_item):
         families_combo_box = QComboBox()
         families_list = QFontDatabase().families()
         for family in families_list:
@@ -175,12 +161,9 @@ class Sidebar(QWidget):
                                                       self.set_font_family(
                                                           x,
                                                           text_item))
-        families_layout.addWidget(families_combo_box)
-        return families_layout
+        return families_combo_box
 
-    def init_capitalization_layout(self, text_item):
-        capitalization_layout = QVBoxLayout()
-        capitalization_layout.addWidget(QLabel("Capitalization"))
+    def init_capitalization_widget(self, text_item):
         capitalization_combo_box = QComboBox()
         capitalization_options = ["Not set",
                                   "All uppercase",
@@ -194,12 +177,9 @@ class Sidebar(QWidget):
         capitalization_combo_box.currentIndexChanged.connect(
             lambda x: self.set_text_capitalization(
                 capitalization_combo_box.itemText(x), text_item))
-        capitalization_layout.addWidget(capitalization_combo_box)
-        return capitalization_layout
+        return capitalization_combo_box
 
     def init_stretch_layout(self, text_item):
-        stretch_layout = QVBoxLayout()
-        stretch_layout.addWidget(QLabel("Stretch"))
         stretch_combo_box = QComboBox()
         stretch_options = {0: "Not set",
                            50: "UltraCondensed",
@@ -221,8 +201,7 @@ class Sidebar(QWidget):
                                                           stretch_combo_box.itemText(
                                                               x),
                                                           text_item))
-        stretch_layout.addWidget(stretch_combo_box)
-        return stretch_layout
+        return stretch_combo_box
 
     @staticmethod
     def set_font_strikeout(strikeout, text_item):
