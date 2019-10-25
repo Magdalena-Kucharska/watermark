@@ -6,18 +6,18 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem
 
 from custom_items import CustomQGraphicsTextItem
-from images_panel import ImagesPanel
-from settings_panel import SettingsPanel
+from images_panel import ImageEditor
+from settings_panel import Sidebar
 
 
 class MainLayout(QHBoxLayout):
 
     def __init__(self, *args, **kwargs):
         super(MainLayout, self).__init__(*args, **kwargs)
-        self.images_panel = ImagesPanel()
-        self.addLayout(self.images_panel)
-        self.settings_panel = SettingsPanel()
-        self.addLayout(self.settings_panel)
+        self.image_editor = ImageEditor()
+        self.addWidget(self.image_editor)
+        self.sidebar = Sidebar()
+        self.addWidget(self.sidebar)
 
 
 class MainWindow(QMainWindow):
@@ -68,9 +68,9 @@ class MainWindow(QMainWindow):
         files_number = len(loaded_images[0])
         if files_number > 0:
             t1 = time.time()
-            self.main_layout.images_panel.images_nav.loaded_images = \
+            self.main_layout.sidebar.navigation.loaded_images = \
                 loaded_images[0]
-            self.main_layout.images_panel.images_nav.update_navbar()
+            self.main_layout.sidebar.navigation.update_navbar()
             self.status_message.setText(f"Loaded {files_number} files.")
             print(time.time() - t1)
         else:

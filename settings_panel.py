@@ -1,17 +1,65 @@
-from PySide2.QtGui import QFont, QFontDatabase, QIntValidator
+import os
+
+from PySide2.QtCore import QSize, Qt
+from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QPixmap, QIcon
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
-    QSizePolicy
+    QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
+    QListWidgetItem
 
 
-class SettingsPanel(QVBoxLayout):
+class ImagesNav(QListWidget):
 
     def __init__(self, *args, **kwargs):
-        super(SettingsPanel, self).__init__(*args, **kwargs)
-        self.main_widget = QWidget()
-        self.main_widget.setSizePolicy(QSizePolicy.Maximum,
-                                       QSizePolicy.Maximum)
-        self.addWidget(self.main_widget)
+        super(ImagesNav, self).__init__(*args, **kwargs)
+        self.loaded_images = None
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setViewMode(QListView.IconMode)
+        self.setIconSize(QSize(128, 128))
+        self.setResizeMode(QListView.Adjust)
+        self.setGridSize(QSize(128, 160))
+        # self.setMaximumSize(200, 1000)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
+
+    def update_navbar(self):
+        self.clear()
+        progress = QProgressDialog("Loading images...", "Cancel", 0,
+                                   len(self.loaded_images), self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle("Watermark")
+        for i, image_path in enumerate(self.loaded_images):
+            progress.setValue(i)
+            if progress.wasCanceled():
+                break
+            scaled_image = QPixmap(image_path).scaled(QSize(128, 128))
+            item = QListWidgetItem(QIcon(scaled_image), os.path.basename(
+                image_path))
+            item.setData(Qt.UserRole, image_path)
+            self.addItem(item)
+        progress.setValue(len(self.loaded_images))
+
+
+class Sidebar(QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(Sidebar, self).__init__(*args, **kwargs)
+        # self.main_widget = QWidget()
+        # self.setSizePolicy(QSizePolicy.Maximum,
+        #                                QSizePolicy.Maximum)
+        # self.addWidget(self.main_widget)
+        self.settings = QWidget()
+        self.navigation = ImagesNav()
+        self.layout = QStackedLayout()
+        self.layout.addWidget(self.settings)
+        self.layout.addWidget(self.navigation)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
+        self.setLayout(self.layout)
+        self.layout.setCurrentWidget(self.navigation)
+        # self.setSizeConstraint(QStackedLayout.SetFixedSize)
+
+    # def sizeHint(self):
+    #     return self.currentWidget().sizeHint()
 
     def init_font_settings(self, text_item):
         self.remove_layout()
