@@ -5,7 +5,7 @@ from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QDoubleValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QPushButton, QColorDialog, QSlider
+    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial
 
 
 class ImagesNav(QListWidget):
@@ -78,7 +78,8 @@ class Sidebar(QWidget):
         text_item_layout = QVBoxLayout()
         text_item_layout.setAlignment(Qt.AlignTop)
         text_item_layout.addLayout(self
-                                   .init_text_item_opacity_layout(text_item))
+                                   .init_item_opacity_layout(text_item))
+        text_item_layout.addLayout(self.init_item_rotation_layout(text_item))
         text_item_group_box.setLayout(text_item_layout)
         layout.addWidget(text_item_group_box)
         self.settings.setLayout(layout)
@@ -88,8 +89,29 @@ class Sidebar(QWidget):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
 
-    def init_text_item_opacity_layout(self, text_item):
-        current_opacity = text_item.opacity()
+    def init_item_rotation_layout(self, item):
+        current_rotation = item.rotation()
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(QLabel("Rotation"))
+        rotation_value_label = QLabel(str(current_rotation))
+        label_layout.addWidget(rotation_value_label)
+        rotation_layout = QVBoxLayout()
+        rotation_layout.addLayout(label_layout)
+        rotation_input = QDial()
+        rotation_input.setMinimum(0)
+        rotation_input.setMaximum(359)
+        rotation_input.setSingleStep(1)
+        rotation_input.setWrapping(True)
+        rotation_input.setValue(int(current_rotation))
+        rotation_input.valueChanged.connect(lambda current_value:
+                                            self.set_item_rotation(
+                                                current_value, item,
+                                                rotation_value_label))
+        rotation_layout.addWidget(rotation_input)
+        return rotation_layout
+
+    def init_item_opacity_layout(self, item):
+        current_opacity = item.opacity()
         label_layout = QHBoxLayout()
         label_layout.addWidget(QLabel("Opacity"))
         opacity_value_label = QLabel(str(current_opacity))
@@ -104,8 +126,8 @@ class Sidebar(QWidget):
         opacity_value = current_opacity * 100
         opacity_input.setValue(opacity_value)
         opacity_input.valueChanged.connect(lambda current_value:
-                                           self.set_text_item_opacity(
-                                               current_value, text_item,
+                                           self.set_item_opacity(
+                                               current_value, item,
                                                opacity_value_label))
         opacity_layout.addWidget(opacity_input)
         return opacity_layout
@@ -299,8 +321,13 @@ class Sidebar(QWidget):
         return stretch_combo_box
 
     @staticmethod
-    def set_text_item_opacity(opacity, text_item, value_label):
-        text_item.setOpacity(opacity / 100)
+    def set_item_rotation(rotation, item, value_label):
+        item.setRotation(float(rotation))
+        value_label.setText(str(rotation))
+
+    @staticmethod
+    def set_item_opacity(opacity, item, value_label):
+        item.setOpacity(opacity / 100)
         value_label.setText(str(opacity / 100))
 
     @staticmethod
