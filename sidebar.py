@@ -85,6 +85,19 @@ class Sidebar(QWidget):
         self.settings.setLayout(layout)
         self.layout.setCurrentWidget(self.settings)
 
+    def init_image_settings(self, image_item):
+        self.remove_layout()
+        image_layout = QVBoxLayout()
+        image_layout.setAlignment(Qt.AlignTop)
+        image_group_box = QGroupBox("Image")
+        image_layout.addLayout(self.init_item_opacity_layout(image_item))
+        image_layout.addLayout(self.init_item_rotation_layout(image_item))
+        image_group_box.setLayout(image_layout)
+        layout = QVBoxLayout()
+        layout.addWidget(image_group_box)
+        self.settings.setLayout(layout)
+        self.layout.setCurrentWidget(self.settings)
+
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())

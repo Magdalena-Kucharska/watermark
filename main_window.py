@@ -1,11 +1,11 @@
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QItemSelectionModel
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
-    QGraphicsScene
+    QGraphicsScene, QGraphicsPixmapItem
 
-from custom_items import CustomQGraphicsTextItem
+from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
 from sidebar import Sidebar
 
 
@@ -17,7 +17,7 @@ class MainLayout(QHBoxLayout):
         self.image_editor.setScene(QGraphicsScene())
         self.addWidget(self.image_editor)
         self.sidebar = Sidebar()
-        self.sidebar.navigation.currentItemChanged.connect(lambda:
+        self.sidebar.navigation.itemSelectionChanged.connect(lambda:
                                                            self.load_image(
                                                                self.sidebar.navigation.currentItem().data(
                                                                    Qt.UserRole)))
@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
         self.menus.action_open.triggered.connect(self.open_file)
         self.menuBar().addMenu(self.menus.menu_file)
         self.menus.action_add_text.triggered.connect(self.add_text)
+        self.menus.action_add_image.triggered.connect(self.add_image)
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
@@ -131,14 +132,22 @@ class MainWindow(QMainWindow):
         if files_number > 0:
             self.main_layout.sidebar.navigation.loaded_images = \
                 loaded_images[0]
+            self.main_layout.sidebar.navigation.itemSelectionChanged \
+                .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
             self.status_message.setText(f"Loaded {files_number} files.")
-            self.main_layout.sidebar.navigation.setCurrentRow(0)
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
             self.menus.menu_apply_preset.setEnabled(True)
             self.menus.action_save_as.setEnabled(True)
             self.menus.action_save_preset.setEnabled(True)
+            self.main_layout.sidebar.navigation.itemSelectionChanged \
+                .connect(lambda:
+                         self.main_layout.load_image(
+                             self.main_layout.sidebar.navigation.currentItem().data(
+                                 Qt.UserRole)))
+            self.main_layout.sidebar.navigation.setCurrentRow(0,
+                                                              QItemSelectionModel.SelectCurrent)
         else:
             self.status_message.setText("Opening files canceled.")
 
@@ -151,3 +160,18 @@ class MainWindow(QMainWindow):
                            QGraphicsTextItem.ItemIsFocusable)
         text_item.setParent(self.main_layout.sidebar)
         self.main_layout.image_editor.scene().addItem(text_item)
+
+    def add_image(self):
+        image = QFileDialog.getOpenFileName(
+            filter="Image files (*.bmp *.BMP *.gif "
+                   "*.GIF *.jpeg *.JPEG *.jpg *.JPG "
+                   "*.png *.PNG *.bpm *.BPM *.pgm "
+                   "*.PGM *.ppm *.PPM *.xbm *.XBM "
+                   "*.xpm *.XPM)")
+        if image:
+            image_item = CustomQGraphicsPixmapItem(image[0])
+            image_item.set_parent(self.main_layout.sidebar)
+            image_item.setFlags(QGraphicsPixmapItem.ItemIsFocusable |
+                                QGraphicsPixmapItem.ItemIsSelectable |
+                                QGraphicsPixmapItem.ItemIsMovable)
+            self.main_layout.image_editor.scene().addItem(image_item)
