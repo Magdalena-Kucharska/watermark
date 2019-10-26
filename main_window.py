@@ -173,5 +173,6 @@ class MainWindow(QMainWindow):
             image_item.set_parent(self.main_layout.sidebar)
             image_item.setFlags(QGraphicsPixmapItem.ItemIsFocusable |
                                 QGraphicsPixmapItem.ItemIsSelectable |
-                                QGraphicsPixmapItem.ItemIsMovable)
+                                QGraphicsPixmapItem.ItemIsMovable |
+                                QGraphicsPixmapItem.ItemSendsScenePositionChanges)
             self.main_layout.image_editor.scene().addItem(image_item)
