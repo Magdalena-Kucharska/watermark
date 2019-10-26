@@ -5,7 +5,7 @@ from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QDoubleValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QPushButton, QColorDialog
+    QListWidgetItem, QPushButton, QColorDialog, QSlider
 
 
 class ImagesNav(QListWidget):
@@ -77,9 +77,8 @@ class Sidebar(QWidget):
         text_item_group_box = QGroupBox("Text item")
         text_item_layout = QVBoxLayout()
         text_item_layout.setAlignment(Qt.AlignTop)
-        text_item_layout.addWidget(QLabel("Opacity"))
-        text_item_layout.addWidget(
-            self.init_text_item_opacity_widget(text_item))
+        text_item_layout.addLayout(self
+                                   .init_text_item_opacity_layout(text_item))
         text_item_group_box.setLayout(text_item_layout)
         layout.addWidget(text_item_group_box)
         self.settings.setLayout(layout)
@@ -89,17 +88,27 @@ class Sidebar(QWidget):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
 
-    def init_text_item_opacity_widget(self, text_item):
-        opacity_input = QLineEdit()
-        validator = QDoubleValidator(0.05, 1., 3)
-        validator.setNotation(QDoubleValidator.StandardNotation)
-        opacity_input.setValidator(validator)
-        opacity_input.setText(str(text_item.opacity()))
-        opacity_input.returnPressed.connect(lambda:
-                                            self.set_text_item_opacity(
-                                                opacity_input.text(),
-                                                text_item))
-        return opacity_input
+    def init_text_item_opacity_layout(self, text_item):
+        current_opacity = text_item.opacity()
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(QLabel("Opacity"))
+        opacity_value_label = QLabel(str(current_opacity))
+        label_layout.addWidget(opacity_value_label)
+        opacity_layout = QVBoxLayout()
+        opacity_layout.addLayout(label_layout)
+        opacity_input = QSlider()
+        opacity_input.setOrientation(Qt.Horizontal)
+        opacity_input.setMinimum(1)
+        opacity_input.setMaximum(100)
+        opacity_input.setSingleStep(1)
+        opacity_value = current_opacity * 100
+        opacity_input.setValue(opacity_value)
+        opacity_input.valueChanged.connect(lambda current_value:
+                                           self.set_text_item_opacity(
+                                               current_value, text_item,
+                                               opacity_value_label))
+        opacity_layout.addWidget(opacity_input)
+        return opacity_layout
 
     def init_font_color_widget(self, text_item):
         button = QPushButton("Set color")
@@ -290,9 +299,9 @@ class Sidebar(QWidget):
         return stretch_combo_box
 
     @staticmethod
-    def set_text_item_opacity(opacity, text_item):
-        (opacity_double, ok) = QLocale.toDouble(QLocale.system(), opacity)
-        text_item.setOpacity(opacity_double)
+    def set_text_item_opacity(opacity, text_item, value_label):
+        text_item.setOpacity(opacity / 100)
+        value_label.setText(str(opacity / 100))
 
     @staticmethod
     def set_font_color(text_item):
