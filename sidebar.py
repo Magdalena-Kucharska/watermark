@@ -74,12 +74,32 @@ class Sidebar(QWidget):
         font_group_box.setLayout(font_layout)
         layout = QVBoxLayout()
         layout.addWidget(font_group_box)
+        text_item_group_box = QGroupBox("Text item")
+        text_item_layout = QVBoxLayout()
+        text_item_layout.setAlignment(Qt.AlignTop)
+        text_item_layout.addWidget(QLabel("Opacity"))
+        text_item_layout.addWidget(
+            self.init_text_item_opacity_widget(text_item))
+        text_item_group_box.setLayout(text_item_layout)
+        layout.addWidget(text_item_group_box)
         self.settings.setLayout(layout)
         self.layout.setCurrentWidget(self.settings)
 
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
+
+    def init_text_item_opacity_widget(self, text_item):
+        opacity_input = QLineEdit()
+        validator = QDoubleValidator(0.05, 1., 3)
+        validator.setNotation(QDoubleValidator.StandardNotation)
+        opacity_input.setValidator(validator)
+        opacity_input.setText(str(text_item.opacity()))
+        opacity_input.returnPressed.connect(lambda:
+                                            self.set_text_item_opacity(
+                                                opacity_input.text(),
+                                                text_item))
+        return opacity_input
 
     def init_font_color_widget(self, text_item):
         button = QPushButton("Set color")
@@ -268,6 +288,11 @@ class Sidebar(QWidget):
                                                               x),
                                                           text_item))
         return stretch_combo_box
+
+    @staticmethod
+    def set_text_item_opacity(opacity, text_item):
+        (opacity_double, ok) = QLocale.toDouble(QLocale.system(), opacity)
+        text_item.setOpacity(opacity_double)
 
     @staticmethod
     def set_font_color(text_item):
