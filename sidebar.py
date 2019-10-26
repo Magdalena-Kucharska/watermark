@@ -57,6 +57,8 @@ class Sidebar(QWidget):
         font_layout.addLayout(self.init_font_size_layout(text_item))
         font_layout.addWidget(QLabel("Style"))
         font_layout.addWidget(self.init_font_style_widget(text_item))
+        font_layout.addWidget(QLabel("Weight"))
+        font_layout.addWidget(self.init_font_weight_widget(text_item))
         font_layout.addWidget(QLabel("Capitalization"))
         font_layout.addWidget(self.init_capitalization_widget(text_item))
         font_layout.addWidget(QLabel("Stretch"))
@@ -76,6 +78,29 @@ class Sidebar(QWidget):
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
+
+    def init_font_weight_widget(self, text_item):
+        font_weights = {0: "Thin",
+                        12: "Extra light",
+                        25: "Light",
+                        50: "Normal",
+                        57: "Medium",
+                        63: "Demi bold",
+                        75: "Bold",
+                        81: "Extra bold",
+                        87: "Black"}
+        font_weight_combo_box = QComboBox()
+        for font_weight in font_weights.values():
+            font_weight_combo_box.addItem(font_weight)
+        font_weight_combo_box.setCurrentText(font_weights[text_item.font(
+
+        ).weight()])
+        font_weight_combo_box.currentTextChanged.connect(lambda
+                                                             current_text:
+                                                         self.set_font_weight(
+                                                             current_text,
+                                                             text_item))
+        return font_weight_combo_box
 
     def init_font_style_widget(self, text_item):
         font_styles = {QFont.StyleNormal: "Normal",
@@ -236,6 +261,21 @@ class Sidebar(QWidget):
                                                               x),
                                                           text_item))
         return stretch_combo_box
+
+    @staticmethod
+    def set_font_weight(weight, text_item):
+        font_weights = {"Thin": 0,
+                        "Extra light": 12,
+                        "Light": 25,
+                        "Normal": 50,
+                        "Medium": 57,
+                        "Demi bold": 63,
+                        "Bold": 75,
+                        "Extra bold": 81,
+                        "Black": 87}
+        font = text_item.font()
+        font.setWeight(font_weights[weight])
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_style(style, text_item):
