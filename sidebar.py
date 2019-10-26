@@ -91,7 +91,10 @@ class Sidebar(QWidget):
         image_layout.setAlignment(Qt.AlignTop)
         image_group_box = QGroupBox("Image")
         image_layout.addLayout(self.init_item_opacity_layout(image_item))
+        image_layout.addSpacing(30)
         image_layout.addLayout(self.init_item_rotation_layout(image_item))
+        image_layout.addSpacing(30)
+        image_layout.addLayout(self.init_image_scale_layout(image_item))
         image_group_box.setLayout(image_layout)
         layout = QVBoxLayout()
         layout.addWidget(image_group_box)
@@ -102,11 +105,32 @@ class Sidebar(QWidget):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
 
+    def init_image_scale_layout(self, image_item):
+        current_scale = image_item.scale()
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(QLabel("Scale"))
+        scale_value_label = QLabel(str(current_scale * 100) + "%")
+        label_layout.addWidget(scale_value_label)
+        scale_input = QSlider()
+        scale_input.setOrientation(Qt.Horizontal)
+        scale_input.setMinimum(1)
+        scale_input.setMaximum(1000)
+        scale_input.setSingleStep(1)
+        scale_input.setValue(current_scale * 100)
+        scale_input.valueChanged.connect(lambda current_value:
+                                         self.set_image_scale(current_value,
+                                                              image_item,
+                                                              scale_value_label))
+        scale_layout = QVBoxLayout()
+        scale_layout.addLayout(label_layout)
+        scale_layout.addWidget(scale_input)
+        return scale_layout
+
     def init_item_rotation_layout(self, item):
         current_rotation = item.rotation()
         label_layout = QHBoxLayout()
         label_layout.addWidget(QLabel("Rotation"))
-        rotation_value_label = QLabel(str(current_rotation))
+        rotation_value_label = QLabel(str(current_rotation) + " degrees")
         label_layout.addWidget(rotation_value_label)
         rotation_layout = QVBoxLayout()
         rotation_layout.addLayout(label_layout)
@@ -334,9 +358,14 @@ class Sidebar(QWidget):
         return stretch_combo_box
 
     @staticmethod
+    def set_image_scale(scale, image_item, value_label):
+        image_item.setScale(scale / 100)
+        value_label.setText(str(scale) + "%")
+
+    @staticmethod
     def set_item_rotation(rotation, item, value_label):
         item.setRotation(float(rotation))
-        value_label.setText(str(rotation))
+        value_label.setText(str(rotation) + " degrees")
 
     @staticmethod
     def set_item_opacity(opacity, item, value_label):
@@ -352,7 +381,6 @@ class Sidebar(QWidget):
             ))
         if font_color.isValid():
             text_item.setDefaultTextColor(font_color)
-
 
     @staticmethod
     def set_font_weight(weight, text_item):

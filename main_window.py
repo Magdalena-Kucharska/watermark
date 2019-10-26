@@ -159,6 +159,8 @@ class MainWindow(QMainWindow):
                            QGraphicsTextItem.ItemSendsScenePositionChanges |
                            QGraphicsTextItem.ItemIsFocusable)
         text_item.setParent(self.main_layout.sidebar)
+        text_item.setTransformOriginPoint(text_item.boundingRect().width() / 2,
+                                          text_item.boundingRect().height() / 2)
         self.main_layout.image_editor.scene().addItem(text_item)
 
     def add_image(self):
@@ -175,4 +177,8 @@ class MainWindow(QMainWindow):
                                 QGraphicsPixmapItem.ItemIsSelectable |
                                 QGraphicsPixmapItem.ItemIsMovable |
                                 QGraphicsPixmapItem.ItemSendsScenePositionChanges)
+            image_item.setTransformOriginPoint(image_item.boundingRect().width(
+
+            ) / 2,
+                                               image_item.boundingRect().height() / 2)
             self.main_layout.image_editor.scene().addItem(image_item)
