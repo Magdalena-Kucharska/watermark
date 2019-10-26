@@ -1,7 +1,7 @@
 import os
 
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QFont, QFontDatabase, QIntValidator
+from PySide2.QtCore import Qt, QLocale
+from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QDoubleValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
@@ -28,8 +28,7 @@ class ImagesNav(QListWidget):
             progress.setValue(i)
             if progress.wasCanceled():
                 break
-            item = QListWidgetItem(os.path.basename(
-                image_path))
+            item = QListWidgetItem(os.path.basename(image_path))
             item.setData(Qt.UserRole, image_path)
             self.addItem(item)
         progress.setValue(len(self.loaded_images))
@@ -54,6 +53,8 @@ class Sidebar(QWidget):
         font_layout.setAlignment(Qt.AlignTop)
         font_layout.addWidget(QLabel("Family"))
         font_layout.addWidget(self.init_font_families_widget(text_item))
+        font_layout.addWidget(QLabel("Size"))
+        font_layout.addLayout(self.init_font_size_layout(text_item))
         font_layout.addWidget(QLabel("Capitalization"))
         font_layout.addWidget(self.init_capitalization_widget(text_item))
         font_layout.addWidget(QLabel("Stretch"))
@@ -72,7 +73,22 @@ class Sidebar(QWidget):
 
     def remove_layout(self):
         if self.settings.layout():
-            QWidget().setLayout(self.main_widget.layout())
+            QWidget().setLayout(self.settings.layout())
+
+    def init_font_size_layout(self, text_item):
+        font_size_input = QLineEdit()
+        validator = QDoubleValidator(0.5, 900., 2)
+        validator.setNotation(QDoubleValidator.StandardNotation)
+        font_size_input.setValidator(validator)
+        font_size_input.setText(str(text_item.font().pointSizeF()))
+        font_size_input.returnPressed.connect(lambda:
+                                              self.set_font_size(
+                                                  font_size_input.text(),
+                                                  text_item))
+        font_size_layout = QHBoxLayout()
+        font_size_layout.addWidget(font_size_input)
+        font_size_layout.addWidget(QLabel("pt"))
+        return font_size_layout
 
     def init_strikeout_widget(self, text_item):
         strikeout_checkbox = QCheckBox("Strikeout")
@@ -202,6 +218,13 @@ class Sidebar(QWidget):
                                                               x),
                                                           text_item))
         return stretch_combo_box
+
+    @staticmethod
+    def set_font_size(size, text_item):
+        font = text_item.font()
+        (size_double, ok) = QLocale.toDouble(QLocale.system(), size)
+        font.setPointSizeF(size_double)
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_strikeout(strikeout, text_item):
