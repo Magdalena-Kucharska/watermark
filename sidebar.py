@@ -55,6 +55,8 @@ class Sidebar(QWidget):
         font_layout.addWidget(self.init_font_families_widget(text_item))
         font_layout.addWidget(QLabel("Size"))
         font_layout.addLayout(self.init_font_size_layout(text_item))
+        font_layout.addWidget(QLabel("Style"))
+        font_layout.addWidget(self.init_font_style_widget(text_item))
         font_layout.addWidget(QLabel("Capitalization"))
         font_layout.addWidget(self.init_capitalization_widget(text_item))
         font_layout.addWidget(QLabel("Stretch"))
@@ -74,6 +76,22 @@ class Sidebar(QWidget):
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
+
+    def init_font_style_widget(self, text_item):
+        font_styles = {QFont.StyleNormal: "Normal",
+                       QFont.StyleItalic: "Italic",
+                       QFont.StyleOblique: "Oblique"}
+        font_style_combo_box = QComboBox()
+        for font_style in font_styles.values():
+            font_style_combo_box.addItem(font_style)
+        font_style_combo_box.setCurrentText(font_styles[text_item.font(
+
+        ).style()])
+        font_style_combo_box.currentTextChanged.connect(lambda current_text:
+                                                        self.set_font_style(
+                                                            current_text,
+                                                            text_item))
+        return font_style_combo_box
 
     def init_font_size_layout(self, text_item):
         font_size_input = QLineEdit()
@@ -218,6 +236,15 @@ class Sidebar(QWidget):
                                                               x),
                                                           text_item))
         return stretch_combo_box
+
+    @staticmethod
+    def set_font_style(style, text_item):
+        font_styles = {"Normal": QFont.StyleNormal,
+                       "Italic": QFont.StyleItalic,
+                       "Oblique": QFont.StyleOblique}
+        font = text_item.font()
+        font.setStyle(font_styles[style])
+        text_item.setFont(font)
 
     @staticmethod
     def set_font_size(size, text_item):
