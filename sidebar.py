@@ -5,7 +5,7 @@ from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QDoubleValidator
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem
+    QListWidgetItem, QPushButton, QColorDialog
 
 
 class ImagesNav(QListWidget):
@@ -55,6 +55,8 @@ class Sidebar(QWidget):
         font_layout.addWidget(self.init_font_families_widget(text_item))
         font_layout.addWidget(QLabel("Size"))
         font_layout.addLayout(self.init_font_size_layout(text_item))
+        font_layout.addWidget(QLabel("Color"))
+        font_layout.addWidget(self.init_font_color_widget(text_item))
         font_layout.addWidget(QLabel("Style"))
         font_layout.addWidget(self.init_font_style_widget(text_item))
         font_layout.addWidget(QLabel("Weight"))
@@ -78,6 +80,11 @@ class Sidebar(QWidget):
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
+
+    def init_font_color_widget(self, text_item):
+        button = QPushButton("Set color")
+        button.clicked.connect(lambda: self.set_font_color(text_item))
+        return button
 
     def init_font_weight_widget(self, text_item):
         font_weights = {0: "Thin",
@@ -261,6 +268,17 @@ class Sidebar(QWidget):
                                                               x),
                                                           text_item))
         return stretch_combo_box
+
+    @staticmethod
+    def set_font_color(text_item):
+        font_color_dialog = QColorDialog()
+        font_color = font_color_dialog.getColor(
+            initial=text_item.defaultTextColor(
+
+            ))
+        if font_color.isValid():
+            text_item.setDefaultTextColor(font_color)
+
 
     @staticmethod
     def set_font_weight(weight, text_item):
