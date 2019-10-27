@@ -57,21 +57,21 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
-            main_window = self.parent().parent().parent()
+            main_window = self.parent.parent().parent()
             main_window.item_pos.setText(f"({scene_pos.x()}, {scene_pos.y()})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
                 if len(self.scene().selectedItems()) == 1:
                     scene_pos = self.scenePos()
-                    main_window = self.parent().parent().parent()
+                    main_window = self.parent.parent().parent()
                     main_window.item_pos.setText(
                         f"({scene_pos.x()}, {scene_pos.y()})")
                     self.parent.init_image_settings(self)
                 else:
                     self.parent.layout.setCurrentWidget(self.parent.navigation)
             else:
-                main_window = self.parent().parent().parent()
+                main_window = self.parent.parent().parent()
                 main_window.item_pos.setText("")
                 self.parent.layout.setCurrentWidget(self.parent.navigation)
         return QGraphicsItem.itemChange(self, change, value)
