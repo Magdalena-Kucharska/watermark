@@ -1,5 +1,5 @@
-from PySide2.QtCore import Qt, QItemSelectionModel
-from PySide2.QtGui import QPixmap
+from PySide2.QtCore import Qt, QItemSelectionModel, QRectF
+from PySide2.QtGui import QPixmap, QImage, QPainter
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(self.menus.menu_file)
         self.menus.action_add_text.triggered.connect(self.add_text)
         self.menus.action_add_image.triggered.connect(self.add_image)
+        self.menus.action_save_as.triggered.connect(self.save_file)
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
@@ -184,3 +185,26 @@ class MainWindow(QMainWindow):
             ) / 2,
                                                image_item.boundingRect().height() / 2)
             self.main_layout.image_editor.scene().addItem(image_item)
+
+    def save_file(self):
+        file_name = QFileDialog.getSaveFileName(self, "Save image as...",
+                                                filter="Image files (*.bmp "
+                                                       "*.BMP *.gif "
+                                                       "*.GIF *.jpeg *.JPEG "
+                                                       "*.jpg *.JPG "
+                                                       "*.png *.PNG *.bpm "
+                                                       "*.BPM *.pgm "
+                                                       "*.PGM *.ppm *.PPM "
+                                                       "*.xbm *.XBM "
+                                                       "*.xpm *.XPM)")
+        if file_name[0]:
+            self.main_layout.image_editor.scene().clearSelection()
+            w = self.main_layout.image_editor.scene().width()
+            h = self.main_layout.image_editor.scene().height()
+            target = QRectF(0, 0, w, h)
+            image = QImage(w, h, QImage.Format_A2BGR30_Premultiplied)
+            painter = QPainter()
+            painter.begin(image)
+            self.main_layout.image_editor.scene().render(painter, target)
+            painter.end()
+            image.save(file_name[0])
