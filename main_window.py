@@ -15,6 +15,7 @@ class MainLayout(QHBoxLayout):
         super(MainLayout, self).__init__(*args, **kwargs)
         self.image_editor = QGraphicsView()
         self.image_editor.setScene(QGraphicsScene())
+        self.image_editor.setStyleSheet("background: transparent")
         self.addWidget(self.image_editor)
         self.sidebar = Sidebar()
         self.sidebar.navigation.itemSelectionChanged.connect(lambda:
@@ -27,8 +28,7 @@ class MainLayout(QHBoxLayout):
         self.image_editor.scene().clear()
         image = QPixmap(image_path)
         self.image_editor.scene().addPixmap(image)
-        self.image_editor.scene().setSceneRect(self.image_editor.scene(
-        ).itemsBoundingRect())
+        self.image_editor.scene().setSceneRect(image.rect())
 
 
 class Menus:
@@ -98,6 +98,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Watermark")
         self.status_message = QLabel()
+        self.item_pos = QLabel()
         self.init_status_bar()
         self.init_menu()
         self.init_size()
@@ -113,6 +114,7 @@ class MainWindow(QMainWindow):
         self.statusBar()
         self.status_message.setText("Ready.")
         self.statusBar().addWidget(self.status_message)
+        self.statusBar().addWidget(self.item_pos)
 
     def init_size(self):
         size = QDesktopWidget().availableGeometry(self)

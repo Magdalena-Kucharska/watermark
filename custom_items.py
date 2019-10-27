@@ -7,17 +7,18 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
 
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
-            rect = self.scene().sceneRect()
-            if not rect.contains(value):
-                value.setX(min(rect.right() - self.boundingRect().width(),
-                               max(value.x(), rect.left())))
-                value.setY(min(rect.bottom() - self.boundingRect().height(),
-                               max(value.y(), rect.top())))
-                return value
+            scene_pos = self.scenePos()
+            main_window = self.parent().parent().parent()
+            main_window.item_pos.setText(f"({scene_pos.x()}, {scene_pos.y()})")
+            return value
         if change == self.ItemSelectedHasChanged:
             if value:
                 if len(self.scene().selectedItems()) == 1:
                     self.parent().init_font_settings(self)
+                    scene_pos = self.scenePos()
+                    main_window = self.parent().parent().parent()
+                    main_window.item_pos.setText(
+                        f"({scene_pos.x()}, {scene_pos.y()})")
                 else:
                     self.parent().layout.setCurrentWidget(self.parent(
 
@@ -28,6 +29,8 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 self.setTextCursor(cursor)
                 self.parent().layout.setCurrentWidget(self.parent().navigation)
                 self.setTextInteractionFlags(Qt.NoTextInteraction)
+                main_window = self.parent().parent().parent()
+                main_window.item_pos.setText("")
         return QGraphicsItem.itemChange(self, change, value)
 
     def mouseDoubleClickEvent(self, event):
@@ -53,19 +56,22 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
 
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
-            rect = self.scene().sceneRect()
-            if not rect.contains(value):
-                value.setX(min(rect.right() - self.boundingRect().width(),
-                               max(value.x(), rect.left())))
-                value.setY(min(rect.bottom() - self.boundingRect().height(),
-                               max(value.y(), rect.top())))
-                return value
+            scene_pos = self.scenePos()
+            main_window = self.parent().parent().parent()
+            main_window.item_pos.setText(f"({scene_pos.x()}, {scene_pos.y()})")
+            return value
         if change == self.ItemSelectedHasChanged:
             if value:
                 if len(self.scene().selectedItems()) == 1:
+                    scene_pos = self.scenePos()
+                    main_window = self.parent().parent().parent()
+                    main_window.item_pos.setText(
+                        f"({scene_pos.x()}, {scene_pos.y()})")
                     self.parent.init_image_settings(self)
                 else:
                     self.parent.layout.setCurrentWidget(self.parent.navigation)
             else:
+                main_window = self.parent().parent().parent()
+                main_window.item_pos.setText("")
                 self.parent.layout.setCurrentWidget(self.parent.navigation)
         return QGraphicsItem.itemChange(self, change, value)
