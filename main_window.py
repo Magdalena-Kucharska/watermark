@@ -188,15 +188,17 @@ class MainWindow(QMainWindow):
 
     def save_file(self):
         file_name = QFileDialog.getSaveFileName(self, "Save image as...",
-                                                filter="Image files (*.bmp "
-                                                       "*.BMP *.gif "
-                                                       "*.GIF *.jpeg *.JPEG "
-                                                       "*.jpg *.JPG "
-                                                       "*.png *.PNG *.bpm "
-                                                       "*.BPM *.pgm "
-                                                       "*.PGM *.ppm *.PPM "
-                                                       "*.xbm *.XBM "
-                                                       "*.xpm *.XPM)")
+                                                filter="Windows Bitmap ("
+                                                       "*.bmp);;"
+                                                       "Joint Photographic "
+                                                       "Experts Group (*.jpg "
+                                                       "*jpeg);;"
+                                                       "Portable Network "
+                                                       "Graphics (*.png);;"
+                                                       "Portable Pixmap ("
+                                                       "*.ppm);;"
+                                                       "X11 Bitmap (*.xbm);;"
+                                                       "X11 Pixmap (*.xpm)")
         if file_name[0]:
             self.main_layout.image_editor.scene().clearSelection()
             w = self.main_layout.image_editor.scene().width()
@@ -207,4 +209,4 @@ class MainWindow(QMainWindow):
             painter.begin(image)
             self.main_layout.image_editor.scene().render(painter, target)
             painter.end()
-            image.save(file_name[0])
+            image.save(file_name[0], format=file_name[1])
