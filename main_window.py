@@ -1,9 +1,15 @@
+import os
+from os import listdir
+from os.path import isfile
+
+import yaml
 from PySide2.QtCore import Qt, QItemSelectionModel, QRectF
 from PySide2.QtGui import QPixmap, QImage, QPainter
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
-    QGraphicsScene, QGraphicsPixmapItem
+    QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox
+from slugify import slugify
 
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
 from sidebar import Sidebar
@@ -109,6 +115,7 @@ class MainWindow(QMainWindow):
         self.menus.action_add_text.triggered.connect(self.add_text)
         self.menus.action_add_image.triggered.connect(self.add_image)
         self.menus.action_save_as.triggered.connect(self.save_file)
+        self.menus.action_save_preset.triggered.connect(self.save_preset)
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
@@ -175,7 +182,8 @@ class MainWindow(QMainWindow):
                    "*.xpm *.XPM)")
         if image:
             image_item = CustomQGraphicsPixmapItem(image[0])
-            image_item.set_parent(self.main_layout.sidebar)
+            image_item.parent = self.main_layout.sidebar
+            image_item.path = image[0]
             image_item.setFlags(QGraphicsPixmapItem.ItemIsFocusable |
                                 QGraphicsPixmapItem.ItemIsSelectable |
                                 QGraphicsPixmapItem.ItemIsMovable |
@@ -210,3 +218,55 @@ class MainWindow(QMainWindow):
             self.main_layout.image_editor.scene().render(painter, target)
             painter.end()
             image.save(file_name[0], format=file_name[1])
+
+    @staticmethod
+    def is_preset_name_valid(name):
+        path = os.path.join("presets")
+        if os.path.exists(path):
+            presets = [file for file in listdir(path) if isfile(
+                os.path.join(path, file))]
+            for preset in presets:
+                if preset.lower() == f"{name.lower()}.yaml":
+                    return False
+        else:
+            os.mkdir("presets")
+        return True
+
+    def save_preset(self):
+        dialog = QInputDialog()
+        is_name_valid = False
+        ok = False
+        preset_name = ""
+        while not is_name_valid:
+            (preset_name, ok) = dialog.getText(self, "Save preset as...",
+                                               "Preset name:")
+            if ok:
+                if len(preset_name) > 0:
+                    is_name_valid = self.is_preset_name_valid(preset_name)
+                    if not is_name_valid:
+                        error = QMessageBox(QMessageBox.Critical,
+                                            "Invalid name",
+                                            "A preset with that name already "
+                                            "exists.",
+                                            QMessageBox.Ok)
+                        error.exec_()
+                else:
+                    error = QMessageBox(QMessageBox.Critical, "Invalid name",
+                                        "Name can't be empty.",
+                                        QMessageBox.Ok)
+                    error.exec_()
+            else:
+                ok = False
+                return
+        if ok:
+            scene_items = self.main_layout.image_editor.scene().items()
+            items_list = []
+            for item in scene_items:
+                if type(item) == CustomQGraphicsTextItem or type(
+                        item) == CustomQGraphicsPixmapItem:
+                    items_list.append(item.get_info())
+            preset_dir = os.path.join("presets", f""
+                                                 f"{slugify(preset_name)}.yaml")
+            preset_file = open(preset_dir, "w")
+            yaml.dump_all(items_list, preset_file, sort_keys=False)
+            preset_file.close()
