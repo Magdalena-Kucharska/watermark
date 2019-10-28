@@ -9,7 +9,8 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
             main_window = self.parent().parent().parent()
-            main_window.item_pos.setText(f"({scene_pos.x()}, {scene_pos.y()})")
+            main_window.item_pos.setText(f"({int(scene_pos.x())},"
+                                         f" {int(scene_pos.y())})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
@@ -18,7 +19,7 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                     scene_pos = self.scenePos()
                     main_window = self.parent().parent().parent()
                     main_window.item_pos.setText(
-                        f"({scene_pos.x()}, {scene_pos.y()})")
+                        f"({int(scene_pos.x())}, {int(scene_pos.y())})")
                 else:
                     self.parent().layout.setCurrentWidget(self.parent(
 
@@ -58,7 +59,8 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
             main_window = self.parent.parent().parent()
-            main_window.item_pos.setText(f"({scene_pos.x()}, {scene_pos.y()})")
+            main_window.item_pos.setText(f"({int(scene_pos.x())},"
+                                         f" {int(scene_pos.y())})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
@@ -66,7 +68,7 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                     scene_pos = self.scenePos()
                     main_window = self.parent.parent().parent()
                     main_window.item_pos.setText(
-                        f"({scene_pos.x()}, {scene_pos.y()})")
+                        f"({int(scene_pos.x())}, {int(scene_pos.y())})")
                     self.parent.init_image_settings(self)
                 else:
                     self.parent.layout.setCurrentWidget(self.parent.navigation)
