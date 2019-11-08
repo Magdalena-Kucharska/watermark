@@ -1,9 +1,11 @@
+from math import floor
+
 import numpy as np
 import pywt
 from PIL import Image
 
 original = np.asarray(Image.open("pic.jpg"))
-watermarked = np.asarray(Image.open("watermarked_compressed.jpg"))
+watermarked = np.asarray(Image.open("watermarked.png"))
 
 original_b, original_g, original_r = original[:, :, 0], original[:, :, 1], original[:, :, 2]
 watermarked_b, watermarked_g, watermarked_r = watermarked[:, :, 0], watermarked[:, :, 1], watermarked[:, :, 2]
@@ -21,31 +23,20 @@ original_LLr, (original_LHr, original_HLr, original_HHr) = original_coeffs2r
 watermarked_LLb, (watermarked_LHb, watermarked_HLb, watermarked_HHb) = watermarked_coeffs2b
 watermarked_LLg, (watermarked_LHg, watermarked_HLg, watermarked_HHg) = watermarked_coeffs2g
 watermarked_LLr, (watermarked_LHr, watermarked_HLr, watermarked_HHr) = watermarked_coeffs2r
-# shape = (len(watermarked_HLb) + len(watermarked_HLg) + len(watermarked_HLr),
-#          len(watermarked_HLb[0] + len(watermarked_HLg[0] + len(watermarked_HLr[0]))))
-watermark_arr = np.zeros((128, 128))
-# print(f"watermark rows: {len(watermark_arr)}, cols: {len(watermark_arr[0])}")
-# print(len(watermark_arr))
-for row in range(len(watermark_arr)):
-    for col in range(len(watermark_arr[row])):
-        string = str(int(watermarked_HLr[row][col] - original_HLr[row][col]))
-        string += str(int(abs(watermarked_HLg[row][col] - original_HLg[row][col])))
-        string += str(int(abs(watermarked_HLb[row][col] - original_HLb[row][col])))
-        # string = string.zfill(3)
-        watermark_arr[row][col] = int(string)
-#         string = f"{int(watermarked_HLr[row][col] - original_HLr[row][col])}"
-#         string += f"{int(watermarked_HLg[row][col] - original_HLg[row][col])*10}"
-#         string += f"{int(watermarked_HLb[row][col] - original_HLb[row][col])*100}"
-#         print(string)
-# watermark_arr[row][col] = (watermarked_HLr[row][col] - original_HLr[row][col]) + \
-#                           10 * (watermarked_HLg[row][col] - original_HLg[row][col]) + \
-#                           100 * (watermarked_HLb[row][col] - original_HLb[row][col])
-# print(round(watermarked_HLr[row][col] - original_HLr[row][col], 0))
 
-# print(watermark_arr)
-# watermark_arr_norm = 255 * (watermark_arr - np.min(watermark_arr)) / np.ptp(watermark_arr).astype(int)
+watermark_arr = np.zeros((128, 128), dtype="uint8")
+
+watermark_arr_len_row = len(watermark_arr)
+watermark_arr_len_col = len(watermark_arr[0])
+c_r = floor((len(watermarked_HLr) - watermark_arr_len_row) / 2)
+c_c = floor((len(watermarked_HLr[0]) - watermark_arr_len_col) / 2)
+for row in range(watermark_arr_len_row):
+    for col in range(watermark_arr_len_col):
+        string = str(np.clip(int(watermarked_HLr[row + c_r][col + c_c] - original_HLr[row + c_r][col + c_c]), 0, 2))
+        string += str(np.clip(int(watermarked_HLg[row + c_r][col + c_c] - original_HLg[row + c_r][col + c_c]), 0, 5))
+        string += str(np.clip(int(watermarked_HLb[row + c_r][col + c_c] - original_HLb[row + c_r][col + c_c]), 0, 5))
+        watermark_arr[row][col] = int(string)
+
 watermark = Image.fromarray(watermark_arr)
-watermark = watermark.convert("L", colors=8)
+
 watermark.save("extracted.png")
-# plt.imsave("extracted.png", watermark_arr)
-# print(np.max(watermark_arr))
