@@ -37,7 +37,7 @@ for i, block in enumerate(HL2_blocks):
     HL2_blocks_dct[i] = cv2.dct(block, cv2.DCT_ROWS)
 
 # Select any color watermark image ‘WI’. Obtain the R, G, B channels of WI.
-image = Image.open("watermark.jpg").convert("1")
+image = Image.open("watermark.jpg").convert("RGB")
 blocks_8x8 = sum([1 for block
                   in HL2_blocks
                   if len(block) == 8 and len(block[0]) == 8])
