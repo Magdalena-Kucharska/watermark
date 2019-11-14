@@ -21,9 +21,7 @@ watermarked_image_blocks = skimage.util.view_as_blocks(
 max_watermark_size = floor(
     sqrt(watermarked_image.shape[0] * watermarked_image.shape[1]
          / 64))
-watermark = np.array(
-    Image.open("watermark3.png").resize((max_watermark_size, max_watermark_size
-                                         )).convert("1"), dtype="uint8")
+watermark = np.zeros((max_watermark_size, max_watermark_size), dtype="uint8")
 for i in range(watermarked_image_blocks.shape[0]):
     for j in range(watermarked_image_blocks.shape[1]):
         # image_blocks[i][j] = dct(dct(dct(image_blocks[i][j], axis=0,
@@ -39,7 +37,7 @@ for i in range(watermarked_image_blocks.shape[0]):
 k, l = 0, 0
 for row in range(watermark.shape[0]):
     for col in range(watermark.shape[1]):
-        if (watermarked_image_blocks[k][l][0][0][0][0] % Q) >= (Q / 2):
+        if (watermarked_image_blocks[k][l][0][0][0][2] % Q) >= (Q / 2):
             watermark[row][col] = 255
         if l == watermarked_image_blocks.shape[1] - 1:
             k += 1
