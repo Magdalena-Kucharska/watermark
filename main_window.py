@@ -5,11 +5,12 @@ from os.path import isfile
 import yaml
 from PySide2.QtCore import Qt, QItemSelectionModel, QRectF, QRect
 from PySide2.QtGui import QPixmap, QImage, QPainter, QKeySequence, QIcon, \
-    QPen
+    QPen, QColor
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
-    QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox
+    QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
+    QGraphicsDropShadowEffect
 from slugify import slugify
 
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
@@ -22,7 +23,12 @@ class MainLayout(QHBoxLayout):
         super(MainLayout, self).__init__(*args, **kwargs)
         self.image_editor = QGraphicsView()
         self.image_editor.setScene(QGraphicsScene())
-        self.image_editor.scene().addPixmap(QPixmap("logo.png"))
+        logo = QGraphicsPixmapItem("logo.png")
+        drop_shadow = QGraphicsDropShadowEffect()
+        drop_shadow.setColor(QColor(63, 63, 63, 90))
+        drop_shadow.setBlurRadius(20.)
+        logo.setGraphicsEffect(drop_shadow)
+        self.image_editor.scene().addItem(logo)
         self.addWidget(self.image_editor)
         self.sidebar = Sidebar()
         self.sidebar. \
