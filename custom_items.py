@@ -6,12 +6,23 @@ from PySide2.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
 
 class CustomQGraphicsTextItem(QGraphicsTextItem):
 
+    def __init__(self, *args, **kwargs):
+        super(CustomQGraphicsTextItem, self).__init__(*args, **kwargs)
+        self.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.setFlags(QGraphicsTextItem.ItemIsSelectable |
+                      QGraphicsTextItem.ItemIsMovable |
+                      QGraphicsTextItem.ItemSendsScenePositionChanges |
+                      QGraphicsTextItem.ItemIsFocusable)
+        self.setTransformOriginPoint(self.boundingRect().width() / 2,
+                                     self.boundingRect().height()
+                                     / 2)
+
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
             main_window = self.parent().parent().parent()
-            main_window.item_pos.setText(f"({int(round(scene_pos.x(), 0))},"
-                                         f" {int(round(scene_pos.y(), 0))})")
+            main_window.item_pos.setText(f"({round(scene_pos.x(), 1)},"
+                                         f" {round(scene_pos.y(), 1)})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
@@ -20,10 +31,10 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                     scene_pos = self.scenePos()
                     main_window = self.parent().parent().parent()
                     main_window.item_pos.setText(
-                        f"({int(scene_pos.x())}, {int(scene_pos.y())})")
+                        f"({round(scene_pos.x(), 1)}, "
+                        f"{round(scene_pos.y(), 1)})")
                 else:
                     self.parent().layout.setCurrentWidget(self.parent(
-
                     ).navigation)
             else:
                 cursor = self.textCursor()
@@ -31,6 +42,10 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 self.setTextCursor(cursor)
                 self.parent().layout.setCurrentWidget(self.parent().navigation)
                 self.setTextInteractionFlags(Qt.NoTextInteraction)
+                self.setFlags(QGraphicsTextItem.ItemIsSelectable |
+                              QGraphicsTextItem.ItemIsMovable |
+                              QGraphicsTextItem.ItemSendsScenePositionChanges |
+                              QGraphicsTextItem.ItemIsFocusable)
                 main_window = self.parent().parent().parent()
                 main_window.item_pos.setText("")
         return QGraphicsItem.itemChange(self, change, value)
@@ -45,6 +60,16 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         click.setButton(event.button())
         click.setPos(event.pos())
         self.mousePressEvent(click)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Down:
+            self.moveBy(0.0, 0.1)
+        elif event.key() == Qt.Key_Up:
+            self.moveBy(0.0, -0.1)
+        elif event.key() == Qt.Key_Left:
+            self.moveBy(-0.1, 0.0)
+        elif event.key() == Qt.Key_Right:
+            self.moveBy(0.1, 0.0)
 
     def get_info(self):
         letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
@@ -93,13 +118,19 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
         super(CustomQGraphicsPixmapItem, self).__init__(*args, **kwargs)
         self.parent = None
         self.path = ""
+        self.setFlags(QGraphicsPixmapItem.ItemIsFocusable |
+                      QGraphicsPixmapItem.ItemIsSelectable |
+                      QGraphicsPixmapItem.ItemIsMovable |
+                      QGraphicsPixmapItem.ItemSendsScenePositionChanges)
+        self.setTransformOriginPoint(self.boundingRect().width() / 2,
+                                     self.boundingRect().height() / 2)
 
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
             main_window = self.parent.parent().parent()
-            main_window.item_pos.setText(f"({int(scene_pos.x())},"
-                                         f" {int(scene_pos.y())})")
+            main_window.item_pos.setText(f"({round(scene_pos.x(), 0)},"
+                                         f" {round(scene_pos.y(), 0)})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
@@ -107,7 +138,8 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                     scene_pos = self.scenePos()
                     main_window = self.parent.parent().parent()
                     main_window.item_pos.setText(
-                        f"({int(scene_pos.x())}, {int(scene_pos.y())})")
+                        f"({round(scene_pos.x(), 1)}, "
+                        f"{round(scene_pos.y(), 1)})")
                     self.parent.init_image_settings(self)
                 else:
                     self.parent.layout.setCurrentWidget(self.parent.navigation)
@@ -116,6 +148,16 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                 main_window.item_pos.setText("")
                 self.parent.layout.setCurrentWidget(self.parent.navigation)
         return QGraphicsItem.itemChange(self, change, value)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Down:
+            self.moveBy(0.0, 0.1)
+        elif event.key() == Qt.Key_Up:
+            self.moveBy(0.0, -0.1)
+        elif event.key() == Qt.Key_Left:
+            self.moveBy(-0.1, 0.0)
+        elif event.key() == Qt.Key_Right:
+            self.moveBy(0.1, 0.0)
 
     def get_info(self):
         scene_pos = self.scenePos()
