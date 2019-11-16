@@ -3,8 +3,9 @@ from os import listdir
 from os.path import isfile
 
 import yaml
-from PySide2.QtCore import Qt, QItemSelectionModel, QRectF
-from PySide2.QtGui import QPixmap, QImage, QPainter
+from PySide2.QtCore import Qt, QItemSelectionModel, QRectF, QRect
+from PySide2.QtGui import QPixmap, QImage, QPainter, QKeySequence, QIcon, \
+    QPen
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
@@ -21,13 +22,17 @@ class MainLayout(QHBoxLayout):
         super(MainLayout, self).__init__(*args, **kwargs)
         self.image_editor = QGraphicsView()
         self.image_editor.setScene(QGraphicsScene())
-        self.image_editor.setStyleSheet("background: transparent")
+        self.image_editor.scene().addPixmap(QPixmap("logo.png"))
         self.addWidget(self.image_editor)
         self.sidebar = Sidebar()
-        self.sidebar.navigation.itemSelectionChanged.connect(lambda:
-                                                           self.load_image(
-                                                               self.sidebar.navigation.currentItem().data(
-                                                                   Qt.UserRole)))
+        self.sidebar. \
+            navigation. \
+            itemSelectionChanged.connect(lambda:
+                                         self.load_image(
+                                             self.sidebar.
+                                                 navigation.
+                                                 currentItem().
+                                                 data(Qt.UserRole)))
         self.addWidget(self.sidebar)
 
     def load_image(self, image_path):
@@ -35,6 +40,12 @@ class MainLayout(QHBoxLayout):
         image = QPixmap(image_path)
         self.image_editor.scene().addPixmap(image)
         self.image_editor.scene().setSceneRect(image.rect())
+        pen = QPen()
+        rect = QRect(0 - pen.width(),
+                     0 - pen.width(),
+                     image.rect().width() + pen.width(),
+                     image.rect().height() + pen.width())
+        self.image_editor.scene().addRect(rect, pen)
 
 
 class Menus:
@@ -42,8 +53,15 @@ class Menus:
     def __init__(self):
         self.menu_file = QMenu("File")
         self.action_open = QAction("Open...", self.menu_file)
+        self.action_open.setShortcut(QKeySequence.Open)
         self.menu_file.addAction(self.action_open)
+        self.action_open_add = QAction("Add...", self.menu_file)
+        self.action_open_add.setShortcut(QKeySequence(Qt.CTRL + Qt.SHIFT + \
+                                                      Qt.Key_O))
+        self.action_open_add.setEnabled(False)
+        self.menu_file.addAction(self.action_open_add)
         self.action_save_as = QAction("Save as...")
+        self.action_save_as.setShortcut(QKeySequence.Save)
         self.action_save_as.setEnabled(False)
         self.menu_file.addAction(self.action_save_as)
 
@@ -108,9 +126,12 @@ class MainWindow(QMainWindow):
         self.init_status_bar()
         self.init_menu()
         self.init_size()
+        self.setWindowIcon(QIcon("logo.png"))
 
     def init_menu(self):
         self.menus.action_open.triggered.connect(self.open_file)
+        self.menus.action_open_add.triggered.connect(lambda: self.open_file(
+            add=True))
         self.menuBar().addMenu(self.menus.menu_file)
         self.menus.action_add_text.triggered.connect(self.add_text)
         self.menus.action_add_image.triggered.connect(self.add_image)
@@ -130,7 +151,7 @@ class MainWindow(QMainWindow):
         size.setWidth(int(size.width() * 0.7))
         self.setGeometry(size)
 
-    def open_file(self):
+    def open_file(self, add=False):
         self.status_message.setText("Open file...")
         loaded_images = QFileDialog().getOpenFileNames(
             filter="Image files (*.bmp *.BMP *.gif "
@@ -138,17 +159,25 @@ class MainWindow(QMainWindow):
                    "*.png *.PNG *.bpm *.BPM *.pgm "
                    "*.PGM *.ppm *.PPM *.xbm *.XBM "
                    "*.xpm *.XPM)")
-        files_number = len(loaded_images[0])
-        if files_number > 0:
-            self.main_layout.sidebar.navigation.loaded_images = \
-                loaded_images[0]
+        files_count = len(loaded_images[0])
+        if files_count > 0:
+            if add:
+                for image in loaded_images[0]:
+                    if image not in \
+                            self.main_layout.sidebar.navigation.loaded_images:
+                        self.main_layout.sidebar.navigation.loaded_images \
+                            .append(image)
+            else:
+                self.main_layout.sidebar.navigation.loaded_images = \
+                    loaded_images[0]
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
-            self.status_message.setText(f"Loaded {files_number} files.")
+            self.status_message.setText(f"Loaded {files_count} files.")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
             self.menus.menu_apply_preset.setEnabled(True)
+            self.menus.action_open_add.setEnabled(True)
             self.menus.action_save_as.setEnabled(True)
             self.menus.action_save_preset.setEnabled(True)
             self.main_layout.sidebar.navigation.itemSelectionChanged \
@@ -170,7 +199,8 @@ class MainWindow(QMainWindow):
                            QGraphicsTextItem.ItemIsFocusable)
         text_item.setParent(self.main_layout.sidebar)
         text_item.setTransformOriginPoint(text_item.boundingRect().width() / 2,
-                                          text_item.boundingRect().height() / 2)
+                                          text_item.boundingRect().height()
+                                          / 2)
         self.main_layout.image_editor.scene().addItem(text_item)
 
     def add_image(self):
@@ -265,8 +295,8 @@ class MainWindow(QMainWindow):
                 if type(item) == CustomQGraphicsTextItem or type(
                         item) == CustomQGraphicsPixmapItem:
                     items_list.append(item.get_info())
-            preset_dir = os.path.join("presets", f""
-                                                 f"{slugify(preset_name)}.yaml")
+            preset_dir = os.path.join("presets",
+                                      f"{slugify(preset_name)}.yaml")
             preset_file = open(preset_dir, "w")
             yaml.dump_all(items_list, preset_file, sort_keys=False)
             preset_file.close()
