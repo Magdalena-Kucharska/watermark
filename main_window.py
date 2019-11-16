@@ -8,7 +8,7 @@ from PySide2.QtGui import QPixmap, QImage, QPainter, QKeySequence, QIcon, \
     QPen, QColor
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
-    QDesktopWidget, QLabel, QHBoxLayout, QGraphicsTextItem, QGraphicsView, \
+    QDesktopWidget, QLabel, QHBoxLayout, QGraphicsView, \
     QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
     QGraphicsDropShadowEffect
 from slugify import slugify
@@ -129,6 +129,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Watermark")
         self.status_message = QLabel()
         self.item_pos = QLabel()
+        self.item_pos.setToolTip("You can adjust item's position with greater "
+                                 "accuracy by using arrow keys.")
         self.init_status_bar()
         self.init_menu()
         self.init_size()
@@ -179,7 +181,7 @@ class MainWindow(QMainWindow):
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
-            self.status_message.setText(f"Loaded {files_count} files.")
+            self.status_message.setText(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
             self.menus.menu_apply_preset.setEnabled(True)
@@ -198,15 +200,7 @@ class MainWindow(QMainWindow):
 
     def add_text(self):
         text_item = CustomQGraphicsTextItem("Watermark")
-        text_item.setTextInteractionFlags(Qt.NoTextInteraction)
-        text_item.setFlags(QGraphicsTextItem.ItemIsSelectable |
-                           QGraphicsTextItem.ItemIsMovable |
-                           QGraphicsTextItem.ItemSendsScenePositionChanges |
-                           QGraphicsTextItem.ItemIsFocusable)
         text_item.setParent(self.main_layout.sidebar)
-        text_item.setTransformOriginPoint(text_item.boundingRect().width() / 2,
-                                          text_item.boundingRect().height()
-                                          / 2)
         self.main_layout.image_editor.scene().addItem(text_item)
 
     def add_image(self):
@@ -220,14 +214,6 @@ class MainWindow(QMainWindow):
             image_item = CustomQGraphicsPixmapItem(image[0])
             image_item.parent = self.main_layout.sidebar
             image_item.path = image[0]
-            image_item.setFlags(QGraphicsPixmapItem.ItemIsFocusable |
-                                QGraphicsPixmapItem.ItemIsSelectable |
-                                QGraphicsPixmapItem.ItemIsMovable |
-                                QGraphicsPixmapItem.ItemSendsScenePositionChanges)
-            image_item.setTransformOriginPoint(image_item.boundingRect().width(
-
-            ) / 2,
-                                               image_item.boundingRect().height() / 2)
             self.main_layout.image_editor.scene().addItem(image_item)
 
     def save_file(self):
