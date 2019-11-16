@@ -1,11 +1,12 @@
 import os
 
 from PySide2.QtCore import Qt, QLocale
-from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, QDoubleValidator
+from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, \
+    QDoubleValidator, QKeySequence
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial
+    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QMenu, QAction
 
 
 class ImagesNav(QListWidget):
@@ -17,6 +18,7 @@ class ImagesNav(QListWidget):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setResizeMode(QListView.Adjust)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
 
     def update_navbar(self):
         self.clear()
@@ -32,6 +34,20 @@ class ImagesNav(QListWidget):
             item.setData(Qt.UserRole, image_path)
             self.addItem(item)
         progress.setValue(len(self.loaded_images))
+
+    def contextMenuEvent(self, event):
+        if len(self.selectedItems()) > 0:
+            context_menu = QMenu(self)
+            remove_action = QAction("Remove from list")
+            remove_action.setShortcut(QKeySequence(Qt.Key_Delete))
+            remove_action.triggered.connect(self.remove_selected_item)
+            context_menu.addAction(remove_action)
+            context_menu.exec_(event.globalPos())
+
+    def remove_selected_item(self):
+        selected_item = self.takeItem(self.row(self.selectedItems()[0]))
+        self.loaded_images.remove(selected_item.data(Qt.UserRole))
+        del selected_item
 
 
 class Sidebar(QWidget):
