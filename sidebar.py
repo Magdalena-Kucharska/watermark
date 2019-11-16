@@ -36,7 +36,7 @@ class ImagesNav(QListWidget):
         progress.setValue(len(self.loaded_images))
 
     def contextMenuEvent(self, event):
-        if len(self.selectedItems()) > 0:
+        if len(self.selectedItems()) > 0 and len(self.loaded_images) > 1:
             context_menu = QMenu(self)
             remove_action = QAction("Remove from list")
             remove_action.setShortcut(QKeySequence(Qt.Key_Delete))
@@ -49,6 +49,10 @@ class ImagesNav(QListWidget):
         self.loaded_images.remove(selected_item.data(Qt.UserRole))
         del selected_item
 
+    def keyPressEvent(self, event):
+        if len(self.selectedItems()) > 0 and event.key() == Qt.Key_Delete \
+                and len(self.loaded_images) > 1:
+            self.remove_selected_item()
 
 class Sidebar(QWidget):
 
