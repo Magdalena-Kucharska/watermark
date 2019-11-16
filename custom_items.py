@@ -10,8 +10,8 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         if change == self.ItemPositionChange:
             scene_pos = self.scenePos()
             main_window = self.parent().parent().parent()
-            main_window.item_pos.setText(f"({int(scene_pos.x())},"
-                                         f" {int(scene_pos.y())})")
+            main_window.item_pos.setText(f"({int(round(scene_pos.x(), 0))},"
+                                         f" {int(round(scene_pos.y(), 0))})")
             return value
         if change == self.ItemSelectedHasChanged:
             if value:
