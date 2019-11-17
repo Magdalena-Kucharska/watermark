@@ -34,7 +34,7 @@ class ImagesNav(QListWidget):
             if progress.wasCanceled():
                 break
             item = QListWidgetItem(os.path.basename(image_path))
-            item.setData(Qt.UserRole, image_path)
+            item.setData(Qt.UserRole, os.path.normpath(image_path))
             self.addItem(item)
         progress.setValue(len(self.loaded_images))
 
@@ -49,13 +49,18 @@ class ImagesNav(QListWidget):
 
     def remove_selected_item(self):
         selected_item = self.takeItem(self.row(self.selectedItems()[0]))
+        main_layout = self.parent().parent().parent().parent().parent(
+        ).main_layout
+        idx = self.loaded_images.index(selected_item.data(Qt.UserRole))
         self.loaded_images.remove(selected_item.data(Qt.UserRole))
+        del main_layout.scenes[idx]
         del selected_item
 
     def keyPressEvent(self, event):
         if len(self.selectedItems()) > 0 and event.key() == Qt.Key_Delete \
                 and len(self.loaded_images) > 1:
             self.remove_selected_item()
+
 
 class Sidebar(QWidget):
 
