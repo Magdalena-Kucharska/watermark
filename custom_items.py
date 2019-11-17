@@ -1,5 +1,5 @@
-from PySide2.QtCore import Qt, QEvent
-from PySide2.QtGui import QFont
+from PySide2.QtCore import Qt, QEvent, QPointF
+from PySide2.QtGui import QFont, QColor
 from PySide2.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsPixmapItem
 
@@ -35,12 +35,12 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                         f"{round(scene_pos.y(), 1)})")
                 else:
                     self.parent().layout.setCurrentWidget(self.parent(
-                    ).navigation)
+                    ).tabs)
             else:
                 cursor = self.textCursor()
                 cursor.clearSelection()
                 self.setTextCursor(cursor)
-                self.parent().layout.setCurrentWidget(self.parent().navigation)
+                self.parent().layout.setCurrentWidget(self.parent().tabs)
                 self.setTextInteractionFlags(Qt.NoTextInteraction)
                 self.setFlags(QGraphicsTextItem.ItemIsSelectable |
                               QGraphicsTextItem.ItemIsMovable |
@@ -111,6 +111,34 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         print(self.defaultTextColor().name())
         return info
 
+    def load_info(self, info):
+        background_size = self.scene().sceneRect()
+        x = float(info["item_scene_pos_x"])
+        y = float(info["item_scene_pos_y"])
+        pos_x = round(background_size.width() * x, 0)
+        pos_y = round(background_size.height() * y, 0)
+        self.setPos(QPointF(pos_x, pos_y))
+        self.setPlainText(info["text"])
+        self.parent().set_letter_spacing_type(self,
+                                              info["letter_spacing_type"])
+        font = self.font()
+        font.setFamily(info["font_family"])
+        font.setPointSizeF(float(info["font_size"]))
+        font.setWeight(int(info["font_weight"]))
+        font.setStretch(int(info["stretch"]))
+        font.setKerning(bool(info["kerning"]))
+        font.setOverline(bool(info["overline"]))
+        font.setStrikeOut(bool(info["strikeout"]))
+        font.setUnderline(bool(info["underline"]))
+        font.setLetterSpacing(font.letterSpacingType(), float(info[
+                                                                  "letter_spacing_value"]))
+        self.setFont(font)
+        self.parent().set_font_style(info["font_style"], self)
+        self.setDefaultTextColor(QColor(info["color"]))
+        self.parent().set_text_capitalization(info["capitalization"], self)
+        self.setOpacity(float(info["opacity"]))
+        self.setRotation(float(info["rotation"]))
+
 
 class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
 
@@ -142,11 +170,11 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                         f"{round(scene_pos.y(), 1)})")
                     self.parent.init_image_settings(self)
                 else:
-                    self.parent.layout.setCurrentWidget(self.parent.navigation)
+                    self.parent.layout.setCurrentWidget(self.parent.tabs)
             else:
                 main_window = self.parent.parent().parent()
                 main_window.item_pos.setText("")
-                self.parent.layout.setCurrentWidget(self.parent.navigation)
+                self.parent.layout.setCurrentWidget(self.parent.tabs)
         return QGraphicsItem.itemChange(self, change, value)
 
     def keyPressEvent(self, event):
@@ -172,3 +200,14 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                 "rotation": self.rotation(),
                 "scale": self.scale()}
         return info
+
+    def load_info(self, info):
+        background_size = self.scene().sceneRect()
+        x = float(info["item_scene_pos_x"])
+        y = float(info["item_scene_pos_y"])
+        pos_x = round(background_size.width() * x, 0)
+        pos_y = round(background_size.height() * y, 0)
+        self.setPos(QPointF(pos_x, pos_y))
+        self.setOpacity(float(info["opacity"]))
+        self.setRotation(float(info["rotation"]))
+        self.setScale(float(info["scale"]))
