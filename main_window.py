@@ -392,3 +392,4 @@ class MainWindow(QMainWindow):
                                        self.main_layout.sidebar.navigation.currentItem().data(
                                            Qt.UserRole),
                                        output_path)
+        self.main_layout.sidebar.tabs.setCurrentIndex(1)
