@@ -1,12 +1,15 @@
+import datetime
 import os
 
 from PySide2.QtCore import Qt, QLocale
 from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, \
-    QDoubleValidator, QKeySequence
+    QDoubleValidator, QKeySequence, QColor
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QMenu, QAction
+    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QMenu, \
+    QAction, \
+    QTextEdit, QTabWidget
 
 
 class ImagesNav(QListWidget):
@@ -60,12 +63,27 @@ class Sidebar(QWidget):
         super(Sidebar, self).__init__(*args, **kwargs)
         self.settings = QWidget()
         self.navigation = ImagesNav()
+        self.log = QTextEdit()
+        self.log.setReadOnly(True)
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self.navigation, "Images list")
+        self.tabs.addTab(self.log, "Application log")
         self.layout = QStackedLayout()
         self.layout.addWidget(self.settings)
-        self.layout.addWidget(self.navigation)
+        self.layout.addWidget(self.tabs)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         self.setLayout(self.layout)
-        self.layout.setCurrentWidget(self.navigation)
+        self.layout.setCurrentWidget(self.tabs)
+
+    def log_text(self, text, color="black"):
+        time = datetime.datetime.now().time()
+        if color == "red":
+            self.log.setTextColor(QColor("red"))
+        else:
+            self.log.setTextColor(QColor("black"))
+        self.log.append(f"{time}:\n {text}")
+        self.log.setTextColor(QColor("grey"))
+        self.log.append("--------------")
 
     def init_font_settings(self, text_item):
         self.remove_layout()
@@ -453,7 +471,8 @@ class Sidebar(QWidget):
 
     @staticmethod
     def set_letter_spacing_type(text_item, letter_spacing_type,
-                                letter_spacing_value_input, units_label):
+                                letter_spacing_value_input=None,
+                                units_label=None):
         font = text_item.font()
         letter_spacing_types = {"Percentage spacing": QFont.PercentageSpacing,
                                 "Absolute spacing": QFont.AbsoluteSpacing}
@@ -469,7 +488,8 @@ class Sidebar(QWidget):
                 units_label.setText("%")
             else:
                 units_label.setText("px")
-        letter_spacing_value_input.setText(str(spacing))
+        if letter_spacing_value_input:
+            letter_spacing_value_input.setText(str(spacing))
 
     @staticmethod
     def set_letter_spacing_value(text_item,
