@@ -1,4 +1,5 @@
 import os
+import re
 from os import listdir
 from os.path import isfile
 
@@ -10,7 +11,8 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QFileDialog, QWidget, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsView, \
     QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QDialog, QVBoxLayout, QComboBox, QPushButton, \
+    QDialogButtonBox, QGroupBox, QLineEdit
 from slugify import slugify
 
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
@@ -101,16 +103,10 @@ class Menus:
                                              self.menu_presets)
         self.menu_presets.addAction(self.action_manage_presets)
 
-        self.menu_apply_preset = QMenu("Apply preset")
-        self.action_apply_preset_current = QAction("To current image",
-                                                   self.menu_apply_preset)
-        self.menu_apply_preset.addAction(self.action_apply_preset_current)
-        self.menu_presets.addMenu(self.menu_apply_preset)
-        self.action_apply_preset_all = QAction("To all loaded "
-                                               "images",
-                                               self.menu_apply_preset)
-        self.menu_apply_preset.addAction(self.action_apply_preset_all)
-        self.menu_apply_preset.setEnabled(False)
+        self.action_apply_preset = QAction("Apply preset...",
+                                           self.menu_presets)
+        self.menu_presets.addAction(self.action_apply_preset)
+        self.action_apply_preset.setEnabled(False)
 
         self.menu_watermark.addMenu(self.menu_visible)
         self.menu_watermark.addMenu(self.menu_invisible)
@@ -121,6 +117,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.icon = QIcon("logo.png")
         self.menus = Menus()
         self.main_layout = MainLayout()
         self.central_widget = QWidget()
@@ -134,7 +131,7 @@ class MainWindow(QMainWindow):
         self.init_status_bar()
         self.init_menu()
         self.init_size()
-        self.setWindowIcon(QIcon("logo.png"))
+        self.setWindowIcon(self.icon)
 
     def init_menu(self):
         self.menus.action_open.triggered.connect(self.open_file)
@@ -143,8 +140,9 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(self.menus.menu_file)
         self.menus.action_add_text.triggered.connect(self.add_text)
         self.menus.action_add_image.triggered.connect(self.add_image)
-        self.menus.action_save_as.triggered.connect(self.save_file)
+        self.menus.action_save_as.triggered.connect(self.get_save_file_name)
         self.menus.action_save_preset.triggered.connect(self.save_preset)
+        self.menus.action_apply_preset.triggered.connect(self.get_preset_name)
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
@@ -184,7 +182,7 @@ class MainWindow(QMainWindow):
             self.status_message.setText(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
-            self.menus.menu_apply_preset.setEnabled(True)
+            self.menus.action_apply_preset.setEnabled(True)
             self.menus.action_open_add.setEnabled(True)
             self.menus.action_save_as.setEnabled(True)
             self.menus.action_save_preset.setEnabled(True)
@@ -216,7 +214,7 @@ class MainWindow(QMainWindow):
             image_item.path = image[0]
             self.main_layout.image_editor.scene().addItem(image_item)
 
-    def save_file(self):
+    def get_save_file_name(self):
         file_name = QFileDialog.getSaveFileName(self, "Save image as...",
                                                 filter="Windows Bitmap ("
                                                        "*.bmp);;"
@@ -230,6 +228,10 @@ class MainWindow(QMainWindow):
                                                        "X11 Bitmap (*.xbm);;"
                                                        "X11 Pixmap (*.xpm)")
         if file_name[0]:
+            self.save_file(file_name[0], file_name[1])
+
+    def save_file(self, file_name, format=None):
+        try:
             self.main_layout.image_editor.scene().clearSelection()
             w = self.main_layout.image_editor.scene().width()
             h = self.main_layout.image_editor.scene().height()
@@ -239,7 +241,15 @@ class MainWindow(QMainWindow):
             painter.begin(image)
             self.main_layout.image_editor.scene().render(painter, target)
             painter.end()
-            image.save(file_name[0], format=file_name[1])
+            if not os.path.exists(os.path.dirname(slugify(file_name))):
+                os.makedirs(os.path.dirname(slugify(file_name)), exist_ok=True)
+            if format:
+                image.save(file_name, format=format)
+            else:
+                image.save(file_name)
+            return 0
+        except:
+            return 1
 
     @staticmethod
     def is_preset_name_valid(name):
@@ -292,3 +302,93 @@ class MainWindow(QMainWindow):
             preset_file = open(preset_dir, "w")
             yaml.dump_all(items_list, preset_file, sort_keys=False)
             preset_file.close()
+
+    def get_preset_name(self):
+        presets = []
+        for file in os.listdir("presets"):
+            if os.path.isfile(os.path.join("presets", file)) and re.match(
+                    r"[\s\S]+.yaml", file):
+                presets.append(file)
+        dialog = QDialog()
+        dialog.setWindowTitle("Apply preset")
+        dialog.setModal(True)
+        dialog.setWindowIcon(self.icon)
+        layout = QVBoxLayout()
+        presets_combo_box = QComboBox()
+        presets_combo_box.addItems(presets)
+        layout.addWidget(presets_combo_box)
+        choice_combo_box = QComboBox()
+        choice_combo_box.addItems(["to current image", "to all loaded images"])
+        layout.addWidget(choice_combo_box)
+        group_box = QGroupBox("Output location")
+        group_box_layout = QVBoxLayout()
+        path_display = QLineEdit()
+        group_box_layout.addWidget(path_display)
+        path_button = QPushButton("Set directory")
+        path_input = QFileDialog()
+        path_input.setFileMode(QFileDialog.Directory)
+        path_input.setOption(QFileDialog.ShowDirsOnly, True)
+        path_button.clicked.connect(lambda:
+                                    path_display.setText(
+                                        path_input.getExistingDirectory()))
+        group_box_layout.addWidget(path_button)
+        group_box.setLayout(group_box_layout)
+        layout.addWidget(group_box)
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok |
+                                      QDialogButtonBox.Cancel)
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+        dialog.setLayout(layout)
+        dialog.accepted.connect(lambda: self.apply_preset(
+            presets_combo_box.currentText(), choice_combo_box.currentText(),
+            path_display.text()))
+        dialog.exec_()
+
+    def apply_preset_to_image(self, items, image, output_path):
+        self.main_layout.load_image(image)
+        new_item = None
+        for item in items:
+            if item["item_type"] == "text":
+                new_item = CustomQGraphicsTextItem()
+                new_item.setParent(self.main_layout.sidebar)
+            else:
+                try:
+                    new_item = CustomQGraphicsPixmapItem(item["image_path"])
+                    new_item.parent = self.main_layout.sidebar
+                except:
+                    self.main_layout.sidebar.log_text(f"Error while "
+                                                      f"retrieving "
+                                                      f"watermark "
+                                                      f"{item['image_path']}. "
+                                                      f"Skipping...", "red")
+            if new_item:
+                self.main_layout.image_editor.scene().addItem(new_item)
+            new_item.load_info(item)
+        save_path = os.path.join(output_path, os.path.basename(
+            image))
+        result = self.save_file(save_path)
+        if result:
+            self.main_layout.sidebar.log_text(f"Error while saving to "
+                                              f"specified "
+                                              f"directory: [{save_path}]. "
+                                              f"File "
+                                              f"[{image}] was "
+                                              f"NOT saved.", "red")
+        else:
+            self.main_layout.sidebar.log_text(f"File [{image}] saved to"
+                                              f" {save_path}.")
+
+    def apply_preset(self, preset_name, mode, output_path):
+        items = []
+        with open(os.path.join("presets", preset_name), 'r') as preset_file:
+            for item in yaml.load_all(preset_file, yaml.FullLoader):
+                items.append(item)
+        if mode == "to all loaded images":
+            for image in self.main_layout.sidebar.navigation.loaded_images:
+                self.apply_preset_to_image(items, image, output_path)
+        else:
+            self.apply_preset_to_image(items,
+                                       self.main_layout.sidebar.navigation.currentItem().data(
+                                           Qt.UserRole),
+                                       output_path)
