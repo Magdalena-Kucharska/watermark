@@ -32,6 +32,7 @@ class MainLayout(QHBoxLayout):
         logo.setGraphicsEffect(drop_shadow)
         self.image_editor.scene().addItem(logo)
         self.addWidget(self.image_editor)
+        self.scenes = []
         self.sidebar = Sidebar()
         self.sidebar. \
             navigation. \
@@ -44,17 +45,20 @@ class MainLayout(QHBoxLayout):
         self.addWidget(self.sidebar)
 
     def load_image(self, image_path):
-        self.image_editor.scene().clear()
+        idx = self.sidebar.navigation.loaded_images.index(image_path)
+        self.image_editor.setScene(self.scenes[idx])
+
+    def add_image_to_scene(self, image_path, scene):
         image = QPixmap(image_path)
-        self.image_editor.scene().addPixmap(image)
-        self.image_editor.scene().setSceneRect(image.rect())
+        scene.addPixmap(image)
+        scene.setSceneRect(image.rect())
         pen = QPen()
         rect = QRect(0 - pen.width(),
                      0 - pen.width(),
                      image.rect().width() + pen.width(),
                      image.rect().height() + pen.width())
-        self.image_editor.scene().addRect(rect, pen)
-
+        scene.addRect(rect, pen)
+        return scene
 
 class Menus:
 
@@ -171,11 +175,23 @@ class MainWindow(QMainWindow):
                 for image in loaded_images[0]:
                     if image not in \
                             self.main_layout.sidebar.navigation.loaded_images:
+                        image = os.path.normpath(image)
                         self.main_layout.sidebar.navigation.loaded_images \
                             .append(image)
+                        scene = QGraphicsScene()
+                        scene = self.main_layout.add_image_to_scene(image,
+                                                                    scene)
+                        self.main_layout.scenes.append(scene)
             else:
-                self.main_layout.sidebar.navigation.loaded_images = \
-                    loaded_images[0]
+                self.main_layout.sidebar.navigation.loaded_images = [
+                    os.path.normpath(image) for image in loaded_images[0]]
+                self.main_layout.scenes = []
+                for image in loaded_images[0]:
+                    image = os.path.normpath(image)
+                    scene = QGraphicsScene()
+                    scene = self.main_layout.add_image_to_scene(image,
+                                                                scene)
+                    self.main_layout.scenes.append(scene)
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
@@ -241,8 +257,8 @@ class MainWindow(QMainWindow):
             painter.begin(image)
             self.main_layout.image_editor.scene().render(painter, target)
             painter.end()
-            if not os.path.exists(os.path.dirname(slugify(file_name))):
-                os.makedirs(os.path.dirname(slugify(file_name)), exist_ok=True)
+            if not os.path.exists(os.path.dirname(file_name)):
+                os.makedirs(os.path.dirname(file_name), exist_ok=True)
             if format:
                 image.save(file_name, format=format)
             else:
@@ -353,19 +369,20 @@ class MainWindow(QMainWindow):
                 new_item = CustomQGraphicsTextItem()
                 new_item.setParent(self.main_layout.sidebar)
             else:
-                try:
+                if os.path.exists(item["image_path"]):
                     new_item = CustomQGraphicsPixmapItem(item["image_path"])
                     new_item.parent = self.main_layout.sidebar
-                except:
-                    self.main_layout.sidebar.log_text(f"Error while "
-                                                      f"retrieving "
-                                                      f"watermark "
-                                                      f"{item['image_path']}. "
-                                                      f"Skipping...", "red")
+                else:
+                    self.main_layout. \
+                        sidebar.log_text(f"Error while retrieving watermark "
+                                         f"[{item['image_path']}]. "
+                                         f"Stopping...", "red")
+                    return 1
             if new_item:
                 self.main_layout.image_editor.scene().addItem(new_item)
             new_item.load_info(item)
-        save_path = os.path.join(output_path, os.path.basename(
+        save_path = os.path.join(os.path.normpath(output_path),
+                                 os.path.basename(
             image))
         result = self.save_file(save_path)
         if result:
@@ -374,19 +391,26 @@ class MainWindow(QMainWindow):
                                               f"directory: [{save_path}]. "
                                               f"File "
                                               f"[{image}] was "
-                                              f"NOT saved.", "red")
+                                              f"NOT saved. Stopping ...",
+                                              "red")
+            return 1
         else:
             self.main_layout.sidebar.log_text(f"File [{image}] saved to"
-                                              f" {save_path}.")
+                                              f" [{save_path}].")
+            return 0
 
     def apply_preset(self, preset_name, mode, output_path):
+        output_path = os.path.normpath(output_path)
         items = []
         with open(os.path.join("presets", preset_name), 'r') as preset_file:
             for item in yaml.load_all(preset_file, yaml.FullLoader):
                 items.append(item)
         if mode == "to all loaded images":
+            result = 0
             for image in self.main_layout.sidebar.navigation.loaded_images:
-                self.apply_preset_to_image(items, image, output_path)
+                if result:
+                    break
+                result = self.apply_preset_to_image(items, image, output_path)
         else:
             self.apply_preset_to_image(items,
                                        self.main_layout.sidebar.navigation.currentItem().data(
