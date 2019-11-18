@@ -3,7 +3,28 @@ from PySide2.QtGui import QFont, QColor
 from PySide2.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsPixmapItem
 
-from sidebar import set_font_style, set_text_capitalization
+from sidebar import set_font_style, set_text_capitalization, \
+    set_letter_spacing_type
+
+
+def move_item_with_arrows(item, key_press_event):
+    if key_press_event.key() == Qt.Key_Down:
+        item.moveBy(0.0, 0.1)
+    elif key_press_event.key() == Qt.Key_Up:
+        item.moveBy(0.0, -0.1)
+    elif key_press_event.key() == Qt.Key_Left:
+        item.moveBy(-0.1, 0.0)
+    elif key_press_event.key() == Qt.Key_Right:
+        item.moveBy(0.1, 0.0)
+
+
+def load_item_position_from_config(item, config):
+    background_size = item.scene().sceneRect()
+    x = float(config["item_scene_pos_x"])
+    y = float(config["item_scene_pos_y"])
+    pos_x = round(background_size.width() * x, 0)
+    pos_y = round(background_size.height() * y, 0)
+    item.setPos(QPointF(pos_x, pos_y))
 
 
 class CustomQGraphicsTextItem(QGraphicsTextItem):
@@ -64,16 +85,9 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         self.mousePressEvent(click)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Down:
-            self.moveBy(0.0, 0.1)
-        elif event.key() == Qt.Key_Up:
-            self.moveBy(0.0, -0.1)
-        elif event.key() == Qt.Key_Left:
-            self.moveBy(-0.1, 0.0)
-        elif event.key() == Qt.Key_Right:
-            self.moveBy(0.1, 0.0)
+        move_item_with_arrows(self, event)
 
-    def get_info(self):
+    def get_config(self):
         letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
                                 QFont.AbsoluteSpacing: "Absolute spacing"}
         capitalization_options = {QFont.MixedCase: "Not set",
@@ -110,36 +124,29 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
                 "letter_spacing_value": font.letterSpacing(),
                 "opacity": self.opacity(),
                 "rotation": self.rotation()}
-        print(self.defaultTextColor().name())
         return info
 
-    def load_info(self, info):
-        background_size = self.scene().sceneRect()
-        x = float(info["item_scene_pos_x"])
-        y = float(info["item_scene_pos_y"])
-        pos_x = round(background_size.width() * x, 0)
-        pos_y = round(background_size.height() * y, 0)
-        self.setPos(QPointF(pos_x, pos_y))
-        self.setPlainText(info["text"])
-        self.parent().set_letter_spacing_type(self,
-                                              info["letter_spacing_type"])
+    def load_config(self, config):
+        load_item_position_from_config(self, config)
+        self.setPlainText(config["text"])
+        set_letter_spacing_type(self, config["letter_spacing_type"])
         font = self.font()
-        font.setFamily(info["font_family"])
-        font.setPointSizeF(float(info["font_size"]))
-        font.setWeight(int(info["font_weight"]))
-        font.setStretch(int(info["stretch"]))
-        font.setKerning(bool(info["kerning"]))
-        font.setOverline(bool(info["overline"]))
-        font.setStrikeOut(bool(info["strikeout"]))
-        font.setUnderline(bool(info["underline"]))
-        font.setLetterSpacing(font.letterSpacingType(), float(info[
-                                                                  "letter_spacing_value"]))
+        font.setFamily(config["font_family"])
+        font.setPointSizeF(float(config["font_size"]))
+        font.setWeight(int(config["font_weight"]))
+        font.setStretch(int(config["stretch"]))
+        font.setKerning(bool(config["kerning"]))
+        font.setOverline(bool(config["overline"]))
+        font.setStrikeOut(bool(config["strikeout"]))
+        font.setUnderline(bool(config["underline"]))
+        font.setLetterSpacing(font.letterSpacingType(),
+                              float(config["letter_spacing_value"]))
         self.setFont(font)
-        set_font_style(info["font_style"], self)
-        self.setDefaultTextColor(QColor(info["color"]))
-        set_text_capitalization(info["capitalization"], self)
-        self.setOpacity(float(info["opacity"]))
-        self.setRotation(float(info["rotation"]))
+        set_font_style(config["font_style"], self)
+        self.setDefaultTextColor(QColor(config["color"]))
+        set_text_capitalization(config["capitalization"], self)
+        self.setOpacity(float(config["opacity"]))
+        self.setRotation(float(config["rotation"]))
 
 
 class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
@@ -180,16 +187,9 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
         return QGraphicsItem.itemChange(self, change, value)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Down:
-            self.moveBy(0.0, 0.1)
-        elif event.key() == Qt.Key_Up:
-            self.moveBy(0.0, -0.1)
-        elif event.key() == Qt.Key_Left:
-            self.moveBy(-0.1, 0.0)
-        elif event.key() == Qt.Key_Right:
-            self.moveBy(0.1, 0.0)
+        move_item_with_arrows(self, event)
 
-    def get_info(self):
+    def get_config(self):
         scene_pos = self.scenePos()
         background_size = self.scene().sceneRect()
         pos_x = round(scene_pos.x() / background_size.width(), 2)
@@ -203,13 +203,8 @@ class CustomQGraphicsPixmapItem(QGraphicsPixmapItem):
                 "scale": self.scale()}
         return info
 
-    def load_info(self, info):
-        background_size = self.scene().sceneRect()
-        x = float(info["item_scene_pos_x"])
-        y = float(info["item_scene_pos_y"])
-        pos_x = round(background_size.width() * x, 0)
-        pos_y = round(background_size.height() * y, 0)
-        self.setPos(QPointF(pos_x, pos_y))
-        self.setOpacity(float(info["opacity"]))
-        self.setRotation(float(info["rotation"]))
-        self.setScale(float(info["scale"]))
+    def load_config(self, config):
+        load_item_position_from_config(self, config)
+        self.setOpacity(float(config["opacity"]))
+        self.setRotation(float(config["rotation"]))
+        self.setScale(float(config["scale"]))
