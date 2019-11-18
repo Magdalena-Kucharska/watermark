@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(size)
 
     def open_file(self, add=False):
+        self.main_layout.image_editor.scene().clearSelection()
         self.status_message.setText("Open file...")
         loaded_images = QFileDialog().getOpenFileNames(
             filter="Image files (*.bmp *.BMP *.gif "
@@ -278,7 +279,6 @@ class MainWindow(QMainWindow):
                 file_name)) if os.path.isfile(os.path.join(
                 os.path.dirname(file_name), file))]
             unique_name = os.path.basename(file_name)
-            print(existing_files)
             while unique_name in existing_files:
                 file_name_splitted = file_name.split('.')
                 unique_name = file_name_splitted[:-1] + str(uuid.uuid4()) + \
@@ -327,7 +327,7 @@ class MainWindow(QMainWindow):
             for item in scene_items:
                 if type(item) == CustomQGraphicsTextItem or type(
                         item) == CustomQGraphicsPixmapItem:
-                    items_list.append(item.get_info())
+                    items_list.append(item.get_config())
             preset_dir = os.path.join("presets",
                                       f"{slugify(preset_name)}.yaml")
             preset_file = open(preset_dir, "w")
@@ -395,7 +395,7 @@ class MainWindow(QMainWindow):
                     return 1
             if new_item:
                 self.main_layout.image_editor.scene().addItem(new_item)
-            new_item.load_info(item)
+            new_item.load_config(item)
         save_path = os.path.join(os.path.normpath(output_path),
                                  os.path.basename(
                                      image))
