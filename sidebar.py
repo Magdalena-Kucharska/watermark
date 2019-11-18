@@ -34,7 +34,7 @@ class ImagesNav(QListWidget):
             if progress.wasCanceled():
                 break
             item = QListWidgetItem(os.path.basename(image_path))
-            item.setData(Qt.UserRole, os.path.normpath(image_path))
+            item.setData(Qt.UserRole, image_path)
             self.addItem(item)
         progress.setValue(len(self.loaded_images))
 
