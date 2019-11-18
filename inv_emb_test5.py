@@ -7,7 +7,7 @@ from PIL import Image
 
 # F:\Magda\Downloads\WJET_2015102313563208.pdf
 Q = 60
-image = np.array(Image.open("wp4.jpg").convert("RGB"))
+image = np.array(Image.open("photo1.jpg").convert("RGB"))
 rows, cols = image.shape[0], image.shape[1]
 while rows % 8 != 0:
     rows += 1
@@ -23,10 +23,6 @@ watermark = np.array(
 
 for i in range(image_blocks.shape[0]):
     for j in range(image_blocks.shape[1]):
-        # image_blocks[i][j] = dct(dct(dct(image_blocks[i][j], axis=0,
-        #                                  norm="ortho"),
-        #                       axis=1, norm="ortho"), axis=2, norm="ortho")
-        # image_blocks[i][j][0] = dctn(image_blocks[i][j][0], norm="ortho")
         for k in range(3):
             image_blocks[i][j][0][:, :, k] = cv2.dct(image_blocks[i][j][0][
                                                      :, :, k])
@@ -35,17 +31,17 @@ k, l = 0, 0
 for row in range(watermark.shape[0]):
     for col in range(watermark.shape[1]):
         if watermark[row][col] == 0:
-            image_blocks[k][l][0][0][0][0] += Q / 2 - ((
+            image_blocks[k][l][0][0][0][2] += Q / 2 - ((
                                                                image_blocks[k][
                                                                    l][0][
-                                                                   0][0][0] -
-                                                      0.75 * Q) % Q)
+                                                                   0][0][2] -
+                                                               0.75 * Q) % Q)
         else:
-            image_blocks[k][l][0][0][0][0] += Q / 2 - ((
+            image_blocks[k][l][0][0][0][2] += Q / 2 - ((
                                                                image_blocks[k][
                                                                    l][0][
-                                                                   0][0][0] +
-                                                        0.75 * Q) % Q)
+                                                                   0][0][2] +
+                                                               0.75 * Q) % Q)
         if l == image_blocks.shape[1] - 1:
             k += 1
             l = 0
@@ -54,12 +50,6 @@ for row in range(watermark.shape[0]):
 
 for row in range(image_blocks.shape[0]):
     for col in range(image_blocks.shape[1]):
-        # image_blocks[row][col] = idct(idct(idct(image_blocks[row][col],
-        #                                         axis=0,
-        #                                  norm="ortho"),
-        #                         axis=1, norm="ortho"), axis=2, norm="ortho")
-        # image_blocks[row][col][0] = idctn(image_blocks[row][col][0],
-        #                                 norm="ortho")
         for k in range(3):
             image_blocks[row][col][0][:, :, k] = cv2.idct(image_blocks[row][
                                                               col][0][

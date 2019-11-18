@@ -3,6 +3,8 @@ from PySide2.QtGui import QFont, QColor
 from PySide2.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsPixmapItem
 
+from sidebar import set_font_style, set_text_capitalization
+
 
 class CustomQGraphicsTextItem(QGraphicsTextItem):
 
@@ -133,9 +135,9 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         font.setLetterSpacing(font.letterSpacingType(), float(info[
                                                                   "letter_spacing_value"]))
         self.setFont(font)
-        self.parent().set_font_style(info["font_style"], self)
+        set_font_style(info["font_style"], self)
         self.setDefaultTextColor(QColor(info["color"]))
-        self.parent().set_text_capitalization(info["capitalization"], self)
+        set_text_capitalization(info["capitalization"], self)
         self.setOpacity(float(info["opacity"]))
         self.setRotation(float(info["rotation"]))
 

@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from os import listdir
 from os.path import isfile
 
@@ -60,6 +61,7 @@ class MainLayout(QHBoxLayout):
         scene.addRect(rect, pen)
         return scene
 
+
 class Menus:
 
     def __init__(self):
@@ -115,6 +117,19 @@ class Menus:
         self.menu_watermark.addMenu(self.menu_visible)
         self.menu_watermark.addMenu(self.menu_invisible)
         self.menu_watermark.addMenu(self.menu_presets)
+
+
+def is_preset_name_valid(name):
+    path = os.path.join("presets")
+    if os.path.exists(path):
+        presets = [file for file in listdir(path) if isfile(
+            os.path.join(path, file))]
+        for preset in presets:
+            if preset.lower() == f"{name.lower()}.yaml":
+                return False
+    else:
+        os.mkdir("presets")
+    return True
 
 
 class MainWindow(QMainWindow):
@@ -259,26 +274,26 @@ class MainWindow(QMainWindow):
             painter.end()
             if not os.path.exists(os.path.dirname(file_name)):
                 os.makedirs(os.path.dirname(file_name), exist_ok=True)
+            existing_files = [file for file in os.listdir(os.path.dirname(
+                file_name)) if os.path.isfile(os.path.join(
+                os.path.dirname(file_name), file))]
+            unique_name = os.path.basename(file_name)
+            print(existing_files)
+            while unique_name in existing_files:
+                file_name_splitted = file_name.split('.')
+                unique_name = file_name_splitted[:-1] + str(uuid.uuid4()) + \
+                              file_name_splitted[-1]
             if format:
-                image.save(file_name, format=format)
+                image.save(
+                    os.path.join(os.path.dirname(file_name), unique_name),
+                    format=format)
             else:
-                image.save(file_name)
+                image.save(
+                    os.path.join(os.path.dirname(file_name), unique_name))
             return 0
-        except:
+        except Exception as e:
+            print(e)
             return 1
-
-    @staticmethod
-    def is_preset_name_valid(name):
-        path = os.path.join("presets")
-        if os.path.exists(path):
-            presets = [file for file in listdir(path) if isfile(
-                os.path.join(path, file))]
-            for preset in presets:
-                if preset.lower() == f"{name.lower()}.yaml":
-                    return False
-        else:
-            os.mkdir("presets")
-        return True
 
     def save_preset(self):
         dialog = QInputDialog()
@@ -290,7 +305,7 @@ class MainWindow(QMainWindow):
                                                "Preset name:")
             if ok:
                 if len(preset_name) > 0:
-                    is_name_valid = self.is_preset_name_valid(preset_name)
+                    is_name_valid = is_preset_name_valid(preset_name)
                     if not is_name_valid:
                         error = QMessageBox(QMessageBox.Critical,
                                             "Invalid name",
@@ -383,7 +398,7 @@ class MainWindow(QMainWindow):
             new_item.load_info(item)
         save_path = os.path.join(os.path.normpath(output_path),
                                  os.path.basename(
-            image))
+                                     image))
         result = self.save_file(save_path)
         if result:
             self.main_layout.sidebar.log_text(f"Error while saving to "
