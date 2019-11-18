@@ -20,6 +20,19 @@ from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
 from sidebar import Sidebar
 
 
+def add_image_to_scene(image_path, scene):
+    image = QPixmap(image_path)
+    scene.addPixmap(image)
+    scene.setSceneRect(image.rect())
+    pen = QPen()
+    rect = QRect(0 - pen.width(),
+                 0 - pen.width(),
+                 image.rect().width() + pen.width(),
+                 image.rect().height() + pen.width())
+    scene.addRect(rect, pen)
+    return scene
+
+
 class MainLayout(QHBoxLayout):
 
     def __init__(self, *args, **kwargs):
@@ -49,18 +62,6 @@ class MainLayout(QHBoxLayout):
         idx = self.sidebar.navigation.loaded_images.index(image_path)
         self.image_editor.setScene(self.scenes[idx])
 
-    def add_image_to_scene(self, image_path, scene):
-        image = QPixmap(image_path)
-        scene.addPixmap(image)
-        scene.setSceneRect(image.rect())
-        pen = QPen()
-        rect = QRect(0 - pen.width(),
-                     0 - pen.width(),
-                     image.rect().width() + pen.width(),
-                     image.rect().height() + pen.width())
-        scene.addRect(rect, pen)
-        return scene
-
 
 class Menus:
 
@@ -70,7 +71,7 @@ class Menus:
         self.action_open.setShortcut(QKeySequence.Open)
         self.menu_file.addAction(self.action_open)
         self.action_open_add = QAction("Add...", self.menu_file)
-        self.action_open_add.setShortcut(QKeySequence(Qt.CTRL + Qt.SHIFT + \
+        self.action_open_add.setShortcut(QKeySequence(Qt.CTRL + Qt.SHIFT +
                                                       Qt.Key_O))
         self.action_open_add.setEnabled(False)
         self.menu_file.addAction(self.action_open_add)
@@ -79,7 +80,7 @@ class Menus:
         self.action_save_as.setEnabled(False)
         self.menu_file.addAction(self.action_save_as)
 
-        self.menu_watermark = QMenu("Watermark")
+        self.menu_watermark = QMenu("Watermarking")
 
         self.menu_visible = QMenu("Visible")
 
@@ -132,6 +133,38 @@ def is_preset_name_valid(name):
     return True
 
 
+def save_file(scene, file_name, file_format=None):
+    try:
+        scene.clearSelection()
+        w = scene.width()
+        h = scene.height()
+        target = QRectF(0, 0, w, h)
+        image = QImage(w, h, QImage.Format_A2BGR30_Premultiplied)
+        painter = QPainter()
+        painter.begin(image)
+        scene.render(painter, target)
+        painter.end()
+        save_dir = os.path.dirname(file_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+        existing_files = [file for file in os.listdir(save_dir) if
+                          os.path.isfile(os.path.join(save_dir, file))]
+        unique_name = os.path.basename(file_name)
+        while unique_name in existing_files:
+            file_name_split = file_name.split('.')
+            unique_name = '.'.join(file_name_split[:-1]) + str(
+                uuid.uuid4()) + '.' + file_name_split[-1]
+        if file_format:
+            image.save(os.path.join(save_dir, unique_name),
+                       format=file_format)
+        else:
+            image.save(os.path.join(save_dir, unique_name))
+        return 0
+    except Exception as e:
+        print(e)
+        return 1
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -151,6 +184,7 @@ class MainWindow(QMainWindow):
         self.init_menu()
         self.init_size()
         self.setWindowIcon(self.icon)
+        self.main_layout.sidebar.log_text("Ready.")
 
     def init_menu(self):
         self.menus.action_open.triggered.connect(self.open_file)
@@ -166,7 +200,6 @@ class MainWindow(QMainWindow):
 
     def init_status_bar(self):
         self.statusBar()
-        self.status_message.setText("Ready.")
         self.statusBar().addWidget(self.status_message)
         self.statusBar().addWidget(self.item_pos)
 
@@ -179,7 +212,7 @@ class MainWindow(QMainWindow):
     def open_file(self, add=False):
         self.main_layout.image_editor.scene().clearSelection()
         self.status_message.setText("Open file...")
-        loaded_images = QFileDialog().getOpenFileNames(
+        loaded_images = QFileDialog.getOpenFileNames(
             filter="Image files (*.bmp *.BMP *.gif "
                    "*.GIF *.jpeg *.JPEG *.jpg *.JPG "
                    "*.png *.PNG *.bpm *.BPM *.pgm "
@@ -187,31 +220,29 @@ class MainWindow(QMainWindow):
                    "*.xpm *.XPM)")
         files_count = len(loaded_images[0])
         if files_count > 0:
+            loaded_images_normalized = [os.path.normpath(image) for image in
+                                        loaded_images[0]]
             if add:
-                for image in loaded_images[0]:
+                for image in loaded_images_normalized:
                     if image not in \
                             self.main_layout.sidebar.navigation.loaded_images:
-                        image = os.path.normpath(image)
                         self.main_layout.sidebar.navigation.loaded_images \
                             .append(image)
                         scene = QGraphicsScene()
-                        scene = self.main_layout.add_image_to_scene(image,
-                                                                    scene)
+                        scene = add_image_to_scene(image, scene)
                         self.main_layout.scenes.append(scene)
             else:
-                self.main_layout.sidebar.navigation.loaded_images = [
-                    os.path.normpath(image) for image in loaded_images[0]]
+                self.main_layout.sidebar.navigation.loaded_images = \
+                    loaded_images_normalized
                 self.main_layout.scenes = []
-                for image in loaded_images[0]:
-                    image = os.path.normpath(image)
+                for image in loaded_images_normalized:
                     scene = QGraphicsScene()
-                    scene = self.main_layout.add_image_to_scene(image,
-                                                                scene)
+                    scene = add_image_to_scene(image, scene)
                     self.main_layout.scenes.append(scene)
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
-            self.status_message.setText(f"Loaded {files_count} file(s).")
+            self.main_layout.sidebar.log_text(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
             self.menus.action_apply_preset.setEnabled(True)
@@ -221,12 +252,14 @@ class MainWindow(QMainWindow):
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .connect(lambda:
                          self.main_layout.load_image(
-                             self.main_layout.sidebar.navigation.currentItem().data(
+                             self.main_layout.
+                                 sidebar.navigation.currentItem().data(
                                  Qt.UserRole)))
-            self.main_layout.sidebar.navigation.setCurrentRow(0,
-                                                              QItemSelectionModel.SelectCurrent)
+            self.main_layout. \
+                sidebar. \
+                navigation.setCurrentRow(0, QItemSelectionModel.SelectCurrent)
         else:
-            self.status_message.setText("Opening files canceled.")
+            self.main_layout.sidebar.log_text("Opening files canceled.")
 
     def add_text(self):
         text_item = CustomQGraphicsTextItem("Watermark")
@@ -245,62 +278,30 @@ class MainWindow(QMainWindow):
         if image:
             image_item = CustomQGraphicsPixmapItem(image[0])
             image_item.parent = self.main_layout.sidebar
-            image_item.path = image[0]
+            image_item.path = os.path.normpath(image[0])
             self.main_layout.image_editor.scene().addItem(image_item)
             self.main_layout.image_editor.scene().clearSelection()
             image_item.setSelected(True)
 
     def get_save_file_name(self):
-        file_name = QFileDialog.getSaveFileName(self, "Save image as...",
-                                                filter="Windows Bitmap ("
-                                                       "*.bmp);;"
-                                                       "Joint Photographic "
-                                                       "Experts Group (*.jpg "
-                                                       "*jpeg);;"
-                                                       "Portable Network "
-                                                       "Graphics (*.png);;"
-                                                       "Portable Pixmap ("
-                                                       "*.ppm);;"
-                                                       "X11 Bitmap (*.xbm);;"
-                                                       "X11 Pixmap (*.xpm)")
-        if file_name[0]:
-            self.save_file(file_name[0], file_name[1])
-
-    def save_file(self, file_name, format=None):
-        try:
-            self.main_layout.image_editor.scene().clearSelection()
-            w = self.main_layout.image_editor.scene().width()
-            h = self.main_layout.image_editor.scene().height()
-            target = QRectF(0, 0, w, h)
-            image = QImage(w, h, QImage.Format_A2BGR30_Premultiplied)
-            painter = QPainter()
-            painter.begin(image)
-            self.main_layout.image_editor.scene().render(painter, target)
-            painter.end()
-            if not os.path.exists(os.path.dirname(file_name)):
-                os.makedirs(os.path.dirname(file_name), exist_ok=True)
-            existing_files = [file for file in os.listdir(os.path.dirname(
-                file_name)) if os.path.isfile(os.path.join(
-                os.path.dirname(file_name), file))]
-            unique_name = os.path.basename(file_name)
-            while unique_name in existing_files:
-                file_name_splitted = file_name.split('.')
-                unique_name = file_name_splitted[:-1] + str(uuid.uuid4()) + \
-                              file_name_splitted[-1]
-            if format:
-                image.save(
-                    os.path.join(os.path.dirname(file_name), unique_name),
-                    format=format)
-            else:
-                image.save(
-                    os.path.join(os.path.dirname(file_name), unique_name))
-            return 0
-        except Exception as e:
-            print(e)
-            return 1
+        (file_name, file_format) = \
+            QFileDialog.getSaveFileName(self,
+                                        "Save image as...",
+                                        filter="Windows Bitmap (*.bmp);;"
+                                               "Joint Photographic Experts "
+                                               "Group (*.jpg *jpeg);;"
+                                               "Portable Network "
+                                               "Graphics (*.png);;"
+                                               "Portable Pixmap (*.ppm);;"
+                                               "X11 Bitmap (*.xbm);;"
+                                               "X11 Pixmap (*.xpm)")
+        if file_name:
+            save_file(self.main_layout.image_editor.scene(), file_name,
+                      file_format)
 
     def save_preset(self):
         dialog = QInputDialog()
+        dialog.setWindowIcon(self.icon)
         is_name_valid = False
         ok = False
         preset_name = ""
@@ -365,7 +366,8 @@ class MainWindow(QMainWindow):
         path_input.setOption(QFileDialog.ShowDirsOnly, True)
         path_button.clicked.connect(lambda:
                                     path_display.setText(
-                                        path_input.getExistingDirectory()))
+                                        os.path.normpath(
+                                            path_input.getExistingDirectory())))
         group_box_layout.addWidget(path_button)
         group_box.setLayout(group_box_layout)
         layout.addWidget(group_box)
@@ -380,10 +382,12 @@ class MainWindow(QMainWindow):
             path_display.text()))
         dialog.exec_()
 
-    def apply_preset_to_image(self, items, image, output_path):
-        self.main_layout.load_image(image)
+    def apply_preset_to_image(self, preset, image_path, output_path):
+        scene_idx = self.main_layout.sidebar.navigation.loaded_images.index(
+            image_path)
+        scene = self.main_layout.scenes[scene_idx]
         new_item = None
-        for item in items:
+        for item in preset:
             if item["item_type"] == "text":
                 new_item = CustomQGraphicsTextItem()
                 new_item.setParent(self.main_layout.sidebar)
@@ -398,28 +402,33 @@ class MainWindow(QMainWindow):
                                          f"Stopping...", "red")
                     return 1
             if new_item:
-                self.main_layout.image_editor.scene().addItem(new_item)
-            new_item.load_config(item)
-        save_path = os.path.join(os.path.normpath(output_path),
-                                 os.path.basename(
-                                     image))
-        result = self.save_file(save_path)
+                scene.addItem(new_item)
+            try:
+                new_item.load_config(item)
+            except Exception as e:
+                self.main_layout.sidebar.log_text(f"Error while applying "
+                                                  f"preset.\n"
+                                                  f"(Exception: {e}.\n"
+                                                  f"Stopping...", "red")
+                return 1
+        image_name = os.path.basename(image_path)
+        save_path = os.path.join(output_path, image_name)
+        result = save_file(scene=scene, file_name=save_path)
         if result:
             self.main_layout.sidebar.log_text(f"Error while saving to "
                                               f"specified "
                                               f"directory: [{save_path}]. "
                                               f"File "
-                                              f"[{image}] was "
+                                              f"[{image_name}] was "
                                               f"NOT saved. Stopping ...",
                                               "red")
             return 1
         else:
-            self.main_layout.sidebar.log_text(f"File [{image}] saved to"
-                                              f" [{save_path}].")
+            self.main_layout.sidebar.log_text(f"File [{image_name}] saved to"
+                                              f" [{output_path}].")
             return 0
 
     def apply_preset(self, preset_name, mode, output_path):
-        output_path = os.path.normpath(output_path)
         items = []
         with open(os.path.join("presets", preset_name), 'r') as preset_file:
             for item in yaml.load_all(preset_file, yaml.FullLoader):
@@ -432,7 +441,7 @@ class MainWindow(QMainWindow):
                 result = self.apply_preset_to_image(items, image, output_path)
         else:
             self.apply_preset_to_image(items,
-                                       self.main_layout.sidebar.navigation.currentItem().data(
-                                           Qt.UserRole),
+                                       self.main_layout.sidebar.navigation.
+                                       currentItem().data(Qt.UserRole),
                                        output_path)
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
