@@ -232,6 +232,8 @@ class MainWindow(QMainWindow):
         text_item = CustomQGraphicsTextItem("Watermark")
         text_item.setParent(self.main_layout.sidebar)
         self.main_layout.image_editor.scene().addItem(text_item)
+        self.main_layout.image_editor.scene().clearSelection()
+        text_item.setSelected(True)
 
     def add_image(self):
         image = QFileDialog.getOpenFileName(
@@ -245,6 +247,8 @@ class MainWindow(QMainWindow):
             image_item.parent = self.main_layout.sidebar
             image_item.path = image[0]
             self.main_layout.image_editor.scene().addItem(image_item)
+            self.main_layout.image_editor.scene().clearSelection()
+            image_item.setSelected(True)
 
     def get_save_file_name(self):
         file_name = QFileDialog.getSaveFileName(self, "Save image as...",
