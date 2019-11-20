@@ -387,6 +387,12 @@ def init_image_scale_layout(image_item):
     return scale_layout
 
 
+def init_item_delete_widget(item):
+    button = QPushButton("Delete")
+    button.clicked.connect(lambda: item.scene().removeItem(item))
+    return button
+
+
 class Sidebar(QWidget):
 
     def __init__(self, *args, **kwargs):
@@ -451,6 +457,7 @@ class Sidebar(QWidget):
         text_item_group_box.setLayout(text_item_layout)
         layout.addWidget(text_item_group_box)
         layout.addWidget(self.init_item_duplicate_widget(text_item))
+        layout.addWidget(init_item_delete_widget(text_item))
         self.settings.setLayout(layout)
         self.layout.setCurrentWidget(self.settings)
 
@@ -467,6 +474,8 @@ class Sidebar(QWidget):
         image_group_box.setLayout(image_layout)
         layout = QVBoxLayout()
         layout.addWidget(image_group_box)
+        layout.addWidget(self.init_item_duplicate_widget(image_item))
+        layout.addWidget(init_item_delete_widget(image_item))
         self.settings.setLayout(layout)
         self.layout.setCurrentWidget(self.settings)
 
@@ -483,6 +492,7 @@ class Sidebar(QWidget):
             new_item = custom_items.CustomQGraphicsPixmapItem(item_config[
                                                                   "image_path"])
             new_item.parent = self
+            new_item.path = item_config["image_path"]
         item.scene().addItem(new_item)
         new_item.load_config(item_config)
         new_item.scene().clearSelection()
