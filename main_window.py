@@ -223,8 +223,7 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
-        self.statusBar()
-        self.statusBar().addWidget(self.item_pos)
+        self.statusBar().addPermanentWidget(self.item_pos)
 
     def init_size(self):
         size = QDesktopWidget().availableGeometry(self)
