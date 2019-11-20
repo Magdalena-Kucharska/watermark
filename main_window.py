@@ -2,7 +2,6 @@ import os
 import re
 import subprocess
 import sys
-import uuid
 
 import yaml
 from PySide2.QtCore import Qt, QItemSelectionModel, QRectF, QRect
@@ -147,22 +146,27 @@ def save_file(scene, file_name, file_format=None):
         save_dir = os.path.dirname(file_name)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir, exist_ok=True)
-        existing_files = [file for file in os.listdir(save_dir) if
-                          os.path.isfile(os.path.join(save_dir, file))]
-        unique_name = os.path.basename(file_name)
-        while unique_name in existing_files:
-            file_name_split = file_name.split('.')
-            unique_name = '.'.join(file_name_split[:-1]) + str(
-                uuid.uuid4()) + '.' + file_name_split[-1]
         if file_format:
-            image.save(os.path.join(save_dir, unique_name),
+            image.save(file_name,
                        format=file_format)
         else:
-            image.save(os.path.join(save_dir, unique_name))
+            image.save(file_name)
         return 0
-    except Exception as e:
-        print(e)
+    except:
         return 1
+
+
+def generate_unique_file_name(file_name, directory):
+    existing_files = [file for file in os.listdir(directory) if
+                      os.path.isfile(os.path.join(directory, file))]
+    unique_name = file_name
+    count = 1
+    while unique_name in existing_files:
+        unique_name_split = unique_name.split('.')
+        unique_name = '.'.join(unique_name_split[:-1]) + f" ({count})"
+        unique_name += f".{unique_name_split[-1]}"
+        count += 1
+    return unique_name
 
 
 def open_folder(path):
@@ -427,7 +431,8 @@ class MainWindow(QMainWindow):
                                                   f"Stopping...", "red")
                 return 1
         image_name = os.path.basename(image_path)
-        save_path = os.path.join(output_path, image_name)
+        unique_name = generate_unique_file_name(image_name, output_path)
+        save_path = os.path.join(output_path, unique_name)
         result = save_file(scene=scene, file_name=save_path)
         if result:
             self.main_layout.sidebar.log_text(f"Error while saving to "
