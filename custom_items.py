@@ -3,8 +3,7 @@ from PySide2.QtGui import QFont, QColor
 from PySide2.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsPixmapItem
 
-from sidebar import set_font_style, set_text_capitalization, \
-    set_letter_spacing_type
+import sidebar
 
 
 def move_item_with_arrows(item, key_press_event):
@@ -129,7 +128,7 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
     def load_config(self, config):
         load_item_position_from_config(self, config)
         self.setPlainText(config["text"])
-        set_letter_spacing_type(self, config["letter_spacing_type"])
+        sidebar.set_letter_spacing_type(self, config["letter_spacing_type"])
         font = self.font()
         font.setFamily(config["font_family"])
         font.setPointSizeF(float(config["font_size"]))
@@ -142,9 +141,9 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         font.setLetterSpacing(font.letterSpacingType(),
                               float(config["letter_spacing_value"]))
         self.setFont(font)
-        set_font_style(config["font_style"], self)
+        sidebar.set_font_style(config["font_style"], self)
         self.setDefaultTextColor(QColor(config["color"]))
-        set_text_capitalization(config["capitalization"], self)
+        sidebar.set_text_capitalization(config["capitalization"], self)
         self.setOpacity(float(config["opacity"]))
         self.setRotation(float(config["rotation"]))
 
