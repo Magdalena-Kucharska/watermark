@@ -16,8 +16,8 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QDialogButtonBox, QGroupBox, QLineEdit
 from slugify import slugify
 
+import sidebar
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
-from sidebar import Sidebar
 
 
 def add_image_to_scene(image_path, scene):
@@ -47,7 +47,7 @@ class MainLayout(QHBoxLayout):
         self.image_editor.scene().addItem(logo)
         self.addWidget(self.image_editor)
         self.scenes = []
-        self.sidebar = Sidebar()
+        self.sidebar = sidebar.Sidebar()
         self.sidebar. \
             navigation. \
             itemSelectionChanged.connect(lambda:
