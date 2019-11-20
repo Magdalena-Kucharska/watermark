@@ -3,13 +3,12 @@ import os
 
 from PySide2.QtCore import Qt, QLocale
 from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, \
-    QDoubleValidator, QKeySequence, QColor
+    QDoubleValidator, QColor
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
-    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QMenu, \
-    QAction, \
-    QTextEdit, QTabWidget
+    QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QTextEdit, \
+    QTabWidget, QMessageBox
 
 import custom_items
 
@@ -40,28 +39,35 @@ class ImagesNav(QListWidget):
             self.addItem(item)
         progress.setValue(len(self.loaded_images))
 
-    def contextMenuEvent(self, event):
-        if len(self.selectedItems()) > 0 and len(self.loaded_images) > 1:
-            context_menu = QMenu(self)
-            remove_action = QAction("Remove from list")
-            remove_action.setShortcut(QKeySequence(Qt.Key_Delete))
-            remove_action.triggered.connect(self.remove_selected_item)
-            context_menu.addAction(remove_action)
-            context_menu.exec_(event.globalPos())
+    def mousePressEvent(self, event):
+        main_window = self.parent().parent().parent().parent().parent()
+        if len(main_window.main_layout.image_editor.scene().items()) > 2:
+            message_box = QMessageBox()
+            message_box.setIcon(QMessageBox.Warning)
+            message_box.setText("The image has been modified. Are you sure "
+                                "you want to load different image without "
+                                "saving? All changes will be lost.")
+            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            message_box.setDefaultButton(QMessageBox.Cancel)
+            message_box.setWindowIcon(main_window.icon)
+            message_box.setWindowTitle("Unsaved changes")
+            answer = message_box.exec()
+            if answer == QMessageBox.Cancel:
+                return
+        QListWidget.mousePressEvent(self, event)
+        if self.currentItem():
+            main_window.main_layout.load_image(
+                self.currentItem().data(Qt.UserRole))
 
     def remove_selected_item(self):
-        selected_item = self.takeItem(self.row(self.selectedItems()[0]))
-        main_layout = self.parent().parent().parent().parent().parent(
-        ).main_layout
-        idx = self.loaded_images.index(selected_item.data(Qt.UserRole))
-        self.loaded_images.remove(selected_item.data(Qt.UserRole))
-        del main_layout.scenes[idx]
-        del selected_item
-
-    def keyPressEvent(self, event):
-        if len(self.selectedItems()) > 0 and event.key() == Qt.Key_Delete \
-                and len(self.loaded_images) > 1:
-            self.remove_selected_item()
+        if self.currentItem() and (len(self.loaded_images) > 1):
+            row = self.currentRow()
+            selected_item = self.takeItem(row)
+            self.loaded_images.remove(selected_item.data(Qt.UserRole))
+            del selected_item
+            main_window = self.parent().parent().parent().parent().parent()
+            main_window.main_layout.load_image(
+                self.currentItem().data(Qt.UserRole))
 
 
 def set_image_scale(scale, image_item, value_label):
