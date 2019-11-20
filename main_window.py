@@ -19,19 +19,6 @@ import sidebar
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
 
 
-def add_image_to_scene(image_path, scene):
-    image = QPixmap(image_path)
-    scene.addPixmap(image)
-    scene.setSceneRect(image.rect())
-    pen = QPen()
-    rect = QRect(0 - pen.width(),
-                 0 - pen.width(),
-                 image.rect().width() + pen.width(),
-                 image.rect().height() + pen.width())
-    scene.addRect(rect, pen)
-    return scene
-
-
 class MainLayout(QHBoxLayout):
 
     def __init__(self, *args, **kwargs):
@@ -45,7 +32,6 @@ class MainLayout(QHBoxLayout):
         logo.setGraphicsEffect(drop_shadow)
         self.image_editor.scene().addItem(logo)
         self.addWidget(self.image_editor)
-        self.scenes = []
         self.sidebar = sidebar.Sidebar()
         self.sidebar. \
             navigation. \
@@ -54,12 +40,33 @@ class MainLayout(QHBoxLayout):
                                              self.sidebar.
                                                  navigation.
                                                  currentItem().
-                                                 data(Qt.UserRole)))
+                                                 data(Qt.UserRole), ask=True))
         self.addWidget(self.sidebar)
 
-    def load_image(self, image_path):
-        idx = self.sidebar.navigation.loaded_images.index(image_path)
-        self.image_editor.setScene(self.scenes[idx])
+    def load_image(self, image_path, ask=False):
+        if ask and (len(self.image_editor.scene().items()) > 2):
+            message_box = QMessageBox()
+            message_box.setIcon(QMessageBox.Warning)
+            message_box.setText("The image has been modified. Are you sure "
+                                "you want to load different image without "
+                                "saving? All changes will be lost.")
+            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            message_box.setDefaultButton(QMessageBox.Cancel)
+            message_box.setWindowIcon(self.parent().parent().icon)
+            message_box.setWindowTitle("Unsaved changes")
+            answer = message_box.exec()
+            if answer == QMessageBox.Cancel:
+                return
+        self.image_editor.scene().clear()
+        image = QPixmap(image_path)
+        self.image_editor.scene().addPixmap(image)
+        self.image_editor.scene().setSceneRect(image.rect())
+        pen = QPen()
+        rect = QRect(0 - pen.width(),
+                     0 - pen.width(),
+                     image.rect().width() + pen.width(),
+                     image.rect().height() + pen.width())
+        self.image_editor.scene().addRect(rect, pen)
 
 
 class Menus:
@@ -189,7 +196,6 @@ class MainWindow(QMainWindow):
         self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Watermark")
-        self.status_message = QLabel()
         self.item_pos = QLabel()
         self.item_pos.setToolTip("You can adjust item's position with greater "
                                  "accuracy by using arrow keys.")
@@ -218,7 +224,6 @@ class MainWindow(QMainWindow):
 
     def init_status_bar(self):
         self.statusBar()
-        self.statusBar().addWidget(self.status_message)
         self.statusBar().addWidget(self.item_pos)
 
     def init_size(self):
@@ -229,7 +234,7 @@ class MainWindow(QMainWindow):
 
     def open_file(self, add=False):
         self.main_layout.image_editor.scene().clearSelection()
-        self.status_message.setText("Open file...")
+        self.main_layout.sidebar.log_text("Open file(s)...")
         loaded_images = QFileDialog.getOpenFileNames(
             filter="Image files (*.bmp *.BMP *.gif "
                    "*.GIF *.jpeg *.JPEG *.jpg *.JPG "
@@ -246,17 +251,9 @@ class MainWindow(QMainWindow):
                             self.main_layout.sidebar.navigation.loaded_images:
                         self.main_layout.sidebar.navigation.loaded_images \
                             .append(image)
-                        scene = QGraphicsScene()
-                        scene = add_image_to_scene(image, scene)
-                        self.main_layout.scenes.append(scene)
             else:
                 self.main_layout.sidebar.navigation.loaded_images = \
                     loaded_images_normalized
-                self.main_layout.scenes = []
-                for image in loaded_images_normalized:
-                    scene = QGraphicsScene()
-                    scene = add_image_to_scene(image, scene)
-                    self.main_layout.scenes.append(scene)
             self.main_layout.sidebar.navigation.itemSelectionChanged \
                 .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
@@ -272,7 +269,7 @@ class MainWindow(QMainWindow):
                          self.main_layout.load_image(
                              self.main_layout.
                                  sidebar.navigation.currentItem().data(
-                                 Qt.UserRole)))
+                                 Qt.UserRole), ask=True))
             self.main_layout. \
                 sidebar. \
                 navigation.setCurrentRow(0, QItemSelectionModel.SelectCurrent)
@@ -401,9 +398,7 @@ class MainWindow(QMainWindow):
         dialog.exec_()
 
     def apply_preset_to_image(self, preset, image_path, output_path):
-        scene_idx = self.main_layout.sidebar.navigation.loaded_images.index(
-            image_path)
-        scene = self.main_layout.scenes[scene_idx]
+        self.main_layout.load_image(image_path)
         new_item = None
         for item in preset:
             if item["item_type"] == "text":
@@ -421,7 +416,7 @@ class MainWindow(QMainWindow):
                                          f"Stopping...", "red")
                     return 1
             if new_item:
-                scene.addItem(new_item)
+                self.main_layout.image_editor.scene().addItem(new_item)
             try:
                 new_item.load_config(item)
             except Exception as e:
@@ -433,22 +428,28 @@ class MainWindow(QMainWindow):
         image_name = os.path.basename(image_path)
         unique_name = generate_unique_file_name(image_name, output_path)
         save_path = os.path.join(output_path, unique_name)
-        result = save_file(scene=scene, file_name=save_path)
+        result = save_file(scene=self.main_layout.image_editor.scene(),
+                           file_name=save_path)
         if result:
-            self.main_layout.sidebar.log_text(f"Error while saving to "
+            self.main_layout.sidebar.log_text(f"{image_name}\n"
+                                              f"Error while saving to "
                                               f"specified "
                                               f"directory: [{save_path}]. "
                                               f"File "
-                                              f"[{image_name}] was "
+                                              f"[{unique_name}] was "
                                               f"NOT saved. Stopping ...",
                                               "red")
             return 1
         else:
-            self.main_layout.sidebar.log_text(f"File [{image_name}] saved to"
+            self.main_layout.sidebar.log_text(f"{image_name}\n"
+                                              f"File "
+                                              f"[{unique_name}] saved to"
                                               f" [{output_path}].")
             return 0
 
     def apply_preset(self, preset_name, mode, output_path):
+        self.main_layout.sidebar.log_text(f"Applying preset ["
+                                          f"{preset_name}]...")
         items = []
         with open(os.path.join("presets", preset_name), 'r') as preset_file:
             for item in yaml.load_all(preset_file, yaml.FullLoader):
@@ -464,4 +465,6 @@ class MainWindow(QMainWindow):
                                        self.main_layout.sidebar.navigation.
                                        currentItem().data(Qt.UserRole),
                                        output_path)
+        self.main_layout.sidebar.log_text(f"Finished applying preset ["
+                                          f"{preset_name}].")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
