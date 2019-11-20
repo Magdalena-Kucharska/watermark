@@ -1,5 +1,7 @@
 import os
 import re
+import subprocess
+import sys
 import uuid
 
 import yaml
@@ -104,7 +106,7 @@ class Menus:
                                           "preset", self.menu_presets)
         self.action_save_preset.setEnabled(False)
         self.menu_presets.addAction(self.action_save_preset)
-        self.action_manage_presets = QAction("Manage presets",
+        self.action_manage_presets = QAction("Open presets directory",
                                              self.menu_presets)
         self.menu_presets.addAction(self.action_manage_presets)
 
@@ -163,6 +165,15 @@ def save_file(scene, file_name, file_format=None):
         return 1
 
 
+def open_folder(path):
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", "--", path])
+    elif sys.platform == "linux2":
+        subprocess.Popen(["xdg-open", "--", path])
+    elif sys.platform == "win32":
+        subprocess.Popen(["explorer", path])
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -194,6 +205,11 @@ class MainWindow(QMainWindow):
         self.menus.action_save_as.triggered.connect(self.get_save_file_name)
         self.menus.action_save_preset.triggered.connect(self.save_preset)
         self.menus.action_apply_preset.triggered.connect(self.get_preset_name)
+        presets_path = os.path.join(os.path.dirname(os.path.realpath(
+            __file__)), "presets")
+        self.menus.action_manage_presets.triggered.connect(lambda:
+                                                           open_folder(
+                                                               presets_path))
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
