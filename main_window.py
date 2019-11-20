@@ -1,8 +1,6 @@
 import os
 import re
 import uuid
-from os import listdir
-from os.path import isfile
 
 import yaml
 from PySide2.QtCore import Qt, QItemSelectionModel, QRectF, QRect
@@ -123,7 +121,7 @@ class Menus:
 def is_preset_name_valid(name):
     path = os.path.join("presets")
     if os.path.exists(path):
-        presets = [file for file in listdir(path) if isfile(
+        presets = [file for file in os.listdir(path) if os.path.isfile(
             os.path.join(path, file))]
         for preset in presets:
             if preset.lower() == f"{name.lower()}.yaml":
