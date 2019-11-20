@@ -11,6 +11,8 @@ from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QAction, \
     QTextEdit, QTabWidget
 
+import custom_items
+
 
 class ImagesNav(QListWidget):
 
@@ -448,6 +450,7 @@ class Sidebar(QWidget):
         text_item_layout.addLayout(init_item_rotation_layout(text_item))
         text_item_group_box.setLayout(text_item_layout)
         layout.addWidget(text_item_group_box)
+        layout.addWidget(self.init_item_duplicate_widget(text_item))
         self.settings.setLayout(layout)
         self.layout.setCurrentWidget(self.settings)
 
@@ -470,6 +473,25 @@ class Sidebar(QWidget):
     def remove_layout(self):
         if self.settings.layout():
             QWidget().setLayout(self.settings.layout())
+
+    def duplicate_item(self, item):
+        item_config = item.get_config()
+        if item_config["item_type"] == "text":
+            new_item = custom_items.CustomQGraphicsTextItem()
+            new_item.setParent(self)
+        else:
+            new_item = custom_items.CustomQGraphicsPixmapItem(item_config[
+                                                                  "image_path"])
+            new_item.parent = self
+        item.scene().addItem(new_item)
+        new_item.load_config(item_config)
+        new_item.scene().clearSelection()
+        new_item.setSelected(True)
+
+    def init_item_duplicate_widget(self, item):
+        button = QPushButton("Duplicate")
+        button.clicked.connect(lambda: self.duplicate_item(item))
+        return button
 
 
 def set_text_capitalization(capitalization, text_item):
