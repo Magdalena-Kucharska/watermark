@@ -418,6 +418,8 @@ class Sidebar(QWidget):
         else:
             self.log.setTextColor(QColor("black"))
         self.log.append(f"{time}:\n {text}")
+        main_window = self.parent().parent()
+        main_window.statusBar().showMessage(text)
         self.log.setTextColor(QColor("grey"))
         self.log.append("--------------")
 
