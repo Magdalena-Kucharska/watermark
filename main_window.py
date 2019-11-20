@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 import yaml
-from PySide2.QtCore import Qt, QItemSelectionModel, QRectF, QRect
+from PySide2.QtCore import Qt, QRectF, QRect
 from PySide2.QtGui import QPixmap, QImage, QPainter, QKeySequence, QIcon, \
     QPen, QColor
 from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
@@ -33,30 +33,9 @@ class MainLayout(QHBoxLayout):
         self.image_editor.scene().addItem(logo)
         self.addWidget(self.image_editor)
         self.sidebar = sidebar.Sidebar()
-        self.sidebar. \
-            navigation. \
-            itemSelectionChanged.connect(lambda:
-                                         self.load_image(
-                                             self.sidebar.
-                                                 navigation.
-                                                 currentItem().
-                                                 data(Qt.UserRole), ask=True))
         self.addWidget(self.sidebar)
 
-    def load_image(self, image_path, ask=False):
-        if ask and (len(self.image_editor.scene().items()) > 2):
-            message_box = QMessageBox()
-            message_box.setIcon(QMessageBox.Warning)
-            message_box.setText("The image has been modified. Are you sure "
-                                "you want to load different image without "
-                                "saving? All changes will be lost.")
-            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            message_box.setDefaultButton(QMessageBox.Cancel)
-            message_box.setWindowIcon(self.parent().parent().icon)
-            message_box.setWindowTitle("Unsaved changes")
-            answer = message_box.exec()
-            if answer == QMessageBox.Cancel:
-                return
+    def load_image(self, image_path):
         self.image_editor.scene().clear()
         image = QPixmap(image_path)
         self.image_editor.scene().addPixmap(image)
@@ -67,6 +46,8 @@ class MainLayout(QHBoxLayout):
                      image.rect().width() + pen.width(),
                      image.rect().height() + pen.width())
         self.image_editor.scene().addRect(rect, pen)
+        self.parent().parent().current_image_name.setText(os.path.basename(
+            image_path))
 
 
 class Menus:
@@ -81,10 +62,14 @@ class Menus:
                                                       Qt.Key_O))
         self.action_open_add.setEnabled(False)
         self.menu_file.addAction(self.action_open_add)
-        self.action_save_as = QAction("Save as...")
+        self.action_save_as = QAction("Save as...", self.menu_file)
         self.action_save_as.setShortcut(QKeySequence.Save)
         self.action_save_as.setEnabled(False)
         self.menu_file.addAction(self.action_save_as)
+        self.action_close = QAction("Close", self.menu_file)
+        self.action_close.setShortcut(QKeySequence.Close)
+        self.action_close.setEnabled(False)
+        self.menu_file.addAction(self.action_close)
 
         self.menu_watermark = QMenu("Watermarking")
 
@@ -92,15 +77,15 @@ class Menus:
 
         self.action_add_text = QAction("Add text", self.menu_visible)
         self.menu_visible.addAction(self.action_add_text)
-        self.action_add_image = QAction("Add image", self.menu_visible)
+        self.action_add_image = QAction("Add image...", self.menu_visible)
         self.menu_visible.addAction(self.action_add_image)
 
         self.menu_visible.setEnabled(False)
 
         self.menu_invisible = QMenu("Invisible")
-        self.action_encode = QAction("Encode invisible watermark",
+        self.action_encode = QAction("Encode invisible watermark...",
                                      self.menu_invisible)
-        self.action_decode = QAction("Decode invisible watermark",
+        self.action_decode = QAction("Decode invisible watermark...",
                                      self.menu_invisible)
         self.menu_invisible.addAction(self.action_encode)
         self.menu_invisible.addAction(self.action_decode)
@@ -109,7 +94,7 @@ class Menus:
         self.menu_presets = QMenu("Presets")
 
         self.action_save_preset = QAction("Save current watermark as "
-                                          "preset", self.menu_presets)
+                                          "preset...", self.menu_presets)
         self.action_save_preset.setEnabled(False)
         self.menu_presets.addAction(self.action_save_preset)
         self.action_manage_presets = QAction("Open presets directory",
@@ -199,6 +184,7 @@ class MainWindow(QMainWindow):
         self.item_pos = QLabel()
         self.item_pos.setToolTip("You can adjust item's position with greater "
                                  "accuracy by using arrow keys.")
+        self.current_image_name = QLabel()
         self.init_status_bar()
         self.init_menu()
         self.init_size()
@@ -220,10 +206,13 @@ class MainWindow(QMainWindow):
         self.menus.action_manage_presets.triggered.connect(lambda:
                                                            open_folder(
                                                                presets_path))
+        self.menus.action_close.triggered.connect(
+            self.main_layout.sidebar.navigation.remove_selected_item)
         self.menuBar().addMenu(self.menus.menu_watermark)
 
     def init_status_bar(self):
         self.statusBar().addPermanentWidget(self.item_pos)
+        self.statusBar().addPermanentWidget(self.current_image_name)
 
     def init_size(self):
         size = QDesktopWidget().availableGeometry(self)
@@ -253,9 +242,10 @@ class MainWindow(QMainWindow):
             else:
                 self.main_layout.sidebar.navigation.loaded_images = \
                     loaded_images_normalized
-            self.main_layout.sidebar.navigation.itemSelectionChanged \
-                .disconnect()
             self.main_layout.sidebar.navigation.update_navbar()
+            if not add:
+                self.main_layout.sidebar.navigation.setCurrentRow(0)
+                self.main_layout.load_image(loaded_images_normalized[0])
             self.main_layout.sidebar.log_text(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
@@ -263,15 +253,7 @@ class MainWindow(QMainWindow):
             self.menus.action_open_add.setEnabled(True)
             self.menus.action_save_as.setEnabled(True)
             self.menus.action_save_preset.setEnabled(True)
-            self.main_layout.sidebar.navigation.itemSelectionChanged \
-                .connect(lambda:
-                         self.main_layout.load_image(
-                             self.main_layout.
-                                 sidebar.navigation.currentItem().data(
-                                 Qt.UserRole), ask=True))
-            self.main_layout. \
-                sidebar. \
-                navigation.setCurrentRow(0, QItemSelectionModel.SelectCurrent)
+            self.menus.action_close.setEnabled(True)
         else:
             self.main_layout.sidebar.log_text("Opening files canceled.")
 
