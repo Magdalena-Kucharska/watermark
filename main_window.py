@@ -395,6 +395,7 @@ class MainWindow(QMainWindow):
                 if os.path.exists(item["image_path"]):
                     new_item = CustomQGraphicsPixmapItem(item["image_path"])
                     new_item.parent = self.main_layout.sidebar
+                    new_item.path = item["image_path"]
                 else:
                     self.main_layout. \
                         sidebar.log_text(f"Error while retrieving watermark "
