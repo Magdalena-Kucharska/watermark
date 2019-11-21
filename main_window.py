@@ -34,6 +34,8 @@ class MainLayout(QHBoxLayout):
         self.addWidget(self.image_editor)
         self.sidebar = sidebar.Sidebar()
         self.addWidget(self.sidebar)
+        self.sidebar.navigation.currentItemChanged.connect(lambda current, previous:
+                                                           self.load_image(current.data(Qt.UserRole)))
 
     def load_image(self, image_path):
         self.image_editor.scene().clear()
@@ -177,7 +179,7 @@ class MainWindow(QMainWindow):
         self.icon = QIcon("logo.png")
         self.menus = Menus()
         self.main_layout = MainLayout()
-        self.central_widget = QWidget()
+        self.central_widget = QWidget(parent=self)
         self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Watermark")
@@ -190,6 +192,8 @@ class MainWindow(QMainWindow):
         self.init_size()
         self.setWindowIcon(self.icon)
         self.main_layout.sidebar.log_text("Ready.")
+        if not os.path.exists("presets"):
+            os.mkdir("presets")
 
     def init_menu(self):
         self.menus.action_open.triggered.connect(self.open_file)
@@ -371,6 +375,8 @@ class MainWindow(QMainWindow):
                                       QDialogButtonBox.Cancel)
         button_box.accepted.connect(dialog.accept)
         button_box.rejected.connect(dialog.reject)
+        if len(presets) == 0:
+            button_box.button(QDialogButtonBox.Ok).setEnabled(False)
         layout.addWidget(button_box)
         dialog.setLayout(layout)
         dialog.accepted.connect(lambda: self.apply_preset(
@@ -380,7 +386,6 @@ class MainWindow(QMainWindow):
 
     def apply_preset_to_image(self, preset, image_path, output_path):
         self.main_layout.load_image(image_path)
-        new_item = None
         for item in preset:
             if item["item_type"] == "text":
                 new_item = CustomQGraphicsTextItem()
