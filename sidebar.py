@@ -8,7 +8,7 @@ from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
     QComboBox, QGroupBox, QCheckBox, QLineEdit, \
     QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
     QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QTextEdit, \
-    QTabWidget, QMessageBox
+    QTabWidget, QMessageBox, QScrollArea
 
 import custom_items
 
@@ -55,9 +55,6 @@ class ImagesNav(QListWidget):
             if answer == QMessageBox.Cancel:
                 return
         QListWidget.mousePressEvent(self, event)
-        if self.currentItem():
-            main_window.main_layout.load_image(
-                self.currentItem().data(Qt.UserRole))
 
     def remove_selected_item(self):
         if self.currentItem() and (len(self.loaded_images) > 1):
@@ -65,9 +62,6 @@ class ImagesNav(QListWidget):
             selected_item = self.takeItem(row)
             self.loaded_images.remove(selected_item.data(Qt.UserRole))
             del selected_item
-            main_window = self.parent().parent().parent().parent().parent()
-            main_window.main_layout.load_image(
-                self.currentItem().data(Qt.UserRole))
 
 
 def set_image_scale(scale, image_item, value_label):
@@ -395,23 +389,29 @@ def init_image_scale_layout(image_item):
 
 def init_item_delete_widget(item):
     button = QPushButton("Delete")
-    button.clicked.connect(lambda: item.scene().removeItem(item))
+    button.clicked.connect(lambda: remove_item_from_scene(item))
     return button
+
+
+def remove_item_from_scene(item):
+    item.setSelected(False)
+    item.scene().removeItem(item)
 
 
 class Sidebar(QWidget):
 
     def __init__(self, *args, **kwargs):
         super(Sidebar, self).__init__(*args, **kwargs)
-        self.settings = QWidget()
-        self.navigation = ImagesNav()
+        self.settings_scroll_area = QScrollArea()
+        self.settings_scroll_area.setWidgetResizable(True)
+        self.navigation = ImagesNav(parent=self)
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.tabs = QTabWidget()
         self.tabs.addTab(self.navigation, "Images list")
         self.tabs.addTab(self.log, "Application log")
         self.layout = QStackedLayout()
-        self.layout.addWidget(self.settings)
+        self.layout.addWidget(self.settings_scroll_area)
         self.layout.addWidget(self.tabs)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         self.setLayout(self.layout)
@@ -430,7 +430,6 @@ class Sidebar(QWidget):
         self.log.append("--------------")
 
     def init_font_settings(self, text_item):
-        self.remove_layout()
         font_layout = QVBoxLayout()
         font_layout.setAlignment(Qt.AlignTop)
         font_layout.addWidget(QLabel("Family"))
@@ -466,11 +465,12 @@ class Sidebar(QWidget):
         layout.addWidget(text_item_group_box)
         layout.addWidget(self.init_item_duplicate_widget(text_item))
         layout.addWidget(init_item_delete_widget(text_item))
-        self.settings.setLayout(layout)
-        self.layout.setCurrentWidget(self.settings)
+        settings = QWidget()
+        settings.setLayout(layout)
+        self.settings_scroll_area.setWidget(settings)
+        self.layout.setCurrentWidget(self.settings_scroll_area)
 
     def init_image_settings(self, image_item):
-        self.remove_layout()
         image_layout = QVBoxLayout()
         image_layout.setAlignment(Qt.AlignTop)
         image_group_box = QGroupBox("Image")
@@ -484,12 +484,10 @@ class Sidebar(QWidget):
         layout.addWidget(image_group_box)
         layout.addWidget(self.init_item_duplicate_widget(image_item))
         layout.addWidget(init_item_delete_widget(image_item))
-        self.settings.setLayout(layout)
-        self.layout.setCurrentWidget(self.settings)
-
-    def remove_layout(self):
-        if self.settings.layout():
-            QWidget().setLayout(self.settings.layout())
+        settings = QWidget()
+        settings.setLayout(layout)
+        self.settings_scroll_area.setWidget(settings)
+        self.layout.setCurrentWidget(self.settings_scroll_area)
 
     def duplicate_item(self, item):
         item_config = item.get_config()
