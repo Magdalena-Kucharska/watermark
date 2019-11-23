@@ -34,8 +34,9 @@ class MainLayout(QHBoxLayout):
         self.addWidget(self.image_editor)
         self.sidebar = sidebar.Sidebar()
         self.addWidget(self.sidebar)
-        self.sidebar.navigation.currentItemChanged.connect(lambda current, previous:
-                                                           self.load_image(current.data(Qt.UserRole)))
+        self.sidebar.navigation.currentItemChanged.connect(
+            lambda current, previous:
+            self.load_image(current.data(Qt.UserRole)))
 
     def load_image(self, image_path, scene=None, for_user=True):
         if scene is None:
@@ -115,6 +116,11 @@ class Menus:
         self.menu_watermark.addMenu(self.menu_invisible)
         self.menu_watermark.addMenu(self.menu_presets)
 
+        self.menu_settings = QMenu("Settings")
+        self.action_set_quality = QAction("Set quality of saved images",
+                                          self.menu_settings)
+        self.menu_settings.addAction(self.action_set_quality)
+
 
 def is_preset_name_valid(name):
     path = os.path.join("presets")
@@ -129,7 +135,7 @@ def is_preset_name_valid(name):
     return True
 
 
-def save_file(scene, file_name, file_format=None):
+def save_file(scene, file_name, file_format=None, quality=-1):
     try:
         scene.clearSelection()
         w = scene.width()
@@ -144,11 +150,12 @@ def save_file(scene, file_name, file_format=None):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir, exist_ok=True)
         if file_format:
-            image.save(file_name,
-                       format=file_format)
+            result = image.save(file_name,
+                                format=file_format,
+                                quality=quality)
         else:
-            image.save(file_name)
-        return 0
+            result = image.save(file_name, quality=quality)
+        return result
     except:
         return 1
 
@@ -216,6 +223,7 @@ class MainWindow(QMainWindow):
         self.menus.action_close.triggered.connect(
             self.main_layout.sidebar.navigation.remove_selected_item)
         self.menuBar().addMenu(self.menus.menu_watermark)
+        self.menuBar().addMenu(self.menus.menu_settings)
 
     def init_status_bar(self):
         self.statusBar().addPermanentWidget(self.item_pos)
@@ -299,8 +307,20 @@ class MainWindow(QMainWindow):
                                                "X11 Bitmap (*.xbm);;"
                                                "X11 Pixmap (*.xpm)")
         if file_name:
-            save_file(self.main_layout.image_editor.scene(), file_name,
-                      file_format)
+            result = save_file(self.main_layout.image_editor.scene(),
+                               file_name, file_format)
+            if not result:
+                self.main_layout.sidebar.log_text(f"File [{file_name}] "
+                                                  f"successfully saved.")
+            else:
+                self.main_layout.sidebar.log_text(f"Error while saving file "
+                                                  f"[{file_name}]. The file "
+                                                  f"was NOT saved.", "red")
+        else:
+            self.main_layout.sidebar.log_text(f"Error while saving file "
+                                              f"[{file_name}]. The file "
+                                              f"was NOT saved.", "red")
+        self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def save_preset(self):
         dialog = QInputDialog()
@@ -327,7 +347,6 @@ class MainWindow(QMainWindow):
                                         QMessageBox.Ok)
                     error.exec_()
             else:
-                ok = False
                 return
         if ok:
             scene_items = self.main_layout.image_editor.scene().items()
