@@ -26,10 +26,12 @@ class ImagesNav(QListWidget):
 
     def update_navbar(self):
         self.clear()
+        main_window = self.parent().parent().parent().parent().parent()
         progress = QProgressDialog("Loading images...", "Cancel", 0,
                                    len(self.loaded_images), self)
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle("Watermark")
+        progress.setWindowIcon(main_window.icon)
         for i, image_path in enumerate(self.loaded_images):
             progress.setValue(i)
             if progress.wasCanceled():
