@@ -12,7 +12,7 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsView, \
     QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
     QGraphicsDropShadowEffect, QDialog, QVBoxLayout, QComboBox, QPushButton, \
-    QDialogButtonBox, QGroupBox, QLineEdit
+    QDialogButtonBox, QGroupBox, QLineEdit, QProgressDialog
 from slugify import slugify
 
 import sidebar
@@ -37,19 +37,22 @@ class MainLayout(QHBoxLayout):
         self.sidebar.navigation.currentItemChanged.connect(lambda current, previous:
                                                            self.load_image(current.data(Qt.UserRole)))
 
-    def load_image(self, image_path):
-        self.image_editor.scene().clear()
+    def load_image(self, image_path, scene=None, for_user=True):
+        if scene is None:
+            scene = self.image_editor.scene()
+        scene.clear()
         image = QPixmap(image_path)
-        self.image_editor.scene().addPixmap(image)
-        self.image_editor.scene().setSceneRect(image.rect())
-        pen = QPen()
-        rect = QRect(0 - pen.width(),
-                     0 - pen.width(),
-                     image.rect().width() + pen.width(),
-                     image.rect().height() + pen.width())
-        self.image_editor.scene().addRect(rect, pen)
-        self.parent().parent().current_image_name.setText(os.path.basename(
-            image_path))
+        scene.addPixmap(image)
+        scene.setSceneRect(image.rect())
+        if for_user:
+            pen = QPen()
+            rect = QRect(0 - pen.width(),
+                         0 - pen.width(),
+                         image.rect().width() + pen.width(),
+                         image.rect().height() + pen.width())
+            self.image_editor.scene().addRect(rect, pen)
+            self.parent().parent().current_image_name.setText(os.path.basename(
+                image_path))
 
 
 class Menus:
@@ -359,6 +362,7 @@ class MainWindow(QMainWindow):
         group_box = QGroupBox("Output location")
         group_box_layout = QVBoxLayout()
         path_display = QLineEdit()
+        path_display.setText(os.path.dirname(os.path.realpath(__file__)))
         group_box_layout.addWidget(path_display)
         path_button = QPushButton("Set directory")
         path_input = QFileDialog()
@@ -385,7 +389,8 @@ class MainWindow(QMainWindow):
         dialog.exec_()
 
     def apply_preset_to_image(self, preset, image_path, output_path):
-        self.main_layout.load_image(image_path)
+        scene = QGraphicsScene()
+        self.main_layout.load_image(image_path, scene, for_user=False)
         for item in preset:
             if item["item_type"] == "text":
                 new_item = CustomQGraphicsTextItem()
@@ -402,7 +407,7 @@ class MainWindow(QMainWindow):
                                          f"Stopping...", "red")
                     return 1
             if new_item:
-                self.main_layout.image_editor.scene().addItem(new_item)
+                scene.addItem(new_item)
             try:
                 new_item.load_config(item)
             except Exception as e:
@@ -412,9 +417,15 @@ class MainWindow(QMainWindow):
                                                   f"Stopping...", "red")
                 return 1
         image_name = os.path.basename(image_path)
-        unique_name = generate_unique_file_name(image_name, output_path)
+        try:
+            unique_name = generate_unique_file_name(image_name, output_path)
+        except:
+            self.main_layout.sidebar.log_text(f"Ouptut directory ["
+                                              f"{output_path}] is invalid. "
+                                              f"Stopping...", "red")
+            return 1
         save_path = os.path.join(output_path, unique_name)
-        result = save_file(scene=self.main_layout.image_editor.scene(),
+        result = save_file(scene=scene,
                            file_name=save_path)
         if result:
             self.main_layout.sidebar.log_text(f"{image_name}\n"
@@ -434,6 +445,8 @@ class MainWindow(QMainWindow):
             return 0
 
     def apply_preset(self, preset_name, mode, output_path):
+        if not os.path.exists(output_path):
+            os.makedirs(output_path, exist_ok=True)
         self.main_layout.sidebar.log_text(f"Applying preset ["
                                           f"{preset_name}]...")
         items = []
@@ -441,16 +454,34 @@ class MainWindow(QMainWindow):
             for item in yaml.load_all(preset_file, yaml.FullLoader):
                 items.append(item)
         if mode == "to all loaded images":
+            progress = QProgressDialog(f"Applying preset [{preset_name}]...",
+                                       "Cancel", 0,
+                                       len(self.main_layout.sidebar.
+                                           navigation.loaded_images), self)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.setWindowTitle("Watermark")
+            progress.setWindowIcon(self.icon)
             result = 0
-            for image in self.main_layout.sidebar.navigation.loaded_images:
-                if result:
+            for i, image in enumerate(
+                    self.main_layout.sidebar.navigation.loaded_images):
+                progress.setValue(i)
+                if result or progress.wasCanceled():
                     break
                 result = self.apply_preset_to_image(items, image, output_path)
+            progress.setValue(
+                len(self.main_layout.sidebar.navigation.loaded_images))
         else:
+            progress = QProgressDialog(f"Applying preset [{preset_name}]...",
+                                       "", 0, 1, self)
+            progress.setCancelButton(None)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.setWindowTitle("Watermark")
+            progress.setWindowIcon(self.icon)
             self.apply_preset_to_image(items,
                                        self.main_layout.sidebar.navigation.
                                        currentItem().data(Qt.UserRole),
                                        output_path)
+            progress.setValue(1)
         self.main_layout.sidebar.log_text(f"Finished applying preset ["
                                           f"{preset_name}].")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
