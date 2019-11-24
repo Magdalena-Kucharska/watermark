@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import sys
+from uuid import uuid4
 
 import yaml
 from PySide2.QtCore import Qt, QRectF, QRect
@@ -12,7 +13,7 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsView, \
     QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
     QGraphicsDropShadowEffect, QDialog, QVBoxLayout, QComboBox, QPushButton, \
-    QDialogButtonBox, QGroupBox, QLineEdit, QProgressDialog
+    QDialogButtonBox, QGroupBox, QLineEdit, QProgressDialog, QSlider, QFrame
 from slugify import slugify
 
 import sidebar
@@ -76,6 +77,9 @@ class Menus:
         self.action_close.setShortcut(QKeySequence.Close)
         self.action_close.setEnabled(False)
         self.menu_file.addAction(self.action_close)
+        self.action_quit = QAction("Exit Watermark", self.menu_file)
+        self.action_quit.setShortcut(QKeySequence.Quit)
+        self.menu_file.addAction(self.action_quit)
 
         self.menu_watermark = QMenu("Watermarking")
 
@@ -112,6 +116,15 @@ class Menus:
         self.menu_presets.addAction(self.action_apply_preset)
         self.action_apply_preset.setEnabled(False)
 
+        self.action_load_preset = QAction("Load preset...", self.menu_presets)
+        self.action_load_preset.setToolTip("This will load preset to the "
+                                           "current image without saving, "
+                                           "making it possible to edit the "
+                                           "preset.")
+        self.action_load_preset.setEnabled(False)
+        self.menu_presets.setToolTipsVisible(True)
+        self.menu_presets.addAction(self.action_load_preset)
+
         self.menu_watermark.addMenu(self.menu_visible)
         self.menu_watermark.addMenu(self.menu_invisible)
         self.menu_watermark.addMenu(self.menu_presets)
@@ -120,6 +133,13 @@ class Menus:
         self.action_set_quality = QAction("Set quality of saved images",
                                           self.menu_settings)
         self.menu_settings.addAction(self.action_set_quality)
+
+        self.menu_about = QMenu("About")
+        self.action_about = QAction("About Watermark", self.menu_about)
+        self.action_help = QAction("Help", self.menu_about)
+        self.action_help.setShortcut(QKeySequence.HelpContents)
+        self.menu_about.addAction(self.action_about)
+        self.menu_about.addAction(self.action_help)
 
 
 def is_preset_name_valid(name):
@@ -155,7 +175,7 @@ def save_file(scene, file_name, file_format=None, quality=-1):
                                 quality=quality)
         else:
             result = image.save(file_name, quality=quality)
-        return result
+        return not result
     except:
         return 1
 
@@ -164,12 +184,12 @@ def generate_unique_file_name(file_name, directory):
     existing_files = [file for file in os.listdir(directory) if
                       os.path.isfile(os.path.join(directory, file))]
     unique_name = file_name
-    count = 1
     while unique_name in existing_files:
+        unique_name = file_name
         unique_name_split = unique_name.split('.')
-        unique_name = '.'.join(unique_name_split[:-1]) + f" ({count})"
+        unique_name = '.'.join(unique_name_split[:-1])
+        unique_name += f"_{str(uuid4())[:5]}"
         unique_name += f".{unique_name_split[-1]}"
-        count += 1
     return unique_name
 
 
@@ -204,6 +224,11 @@ class MainWindow(QMainWindow):
         self.main_layout.sidebar.log_text("Ready.")
         if not os.path.exists("presets"):
             os.mkdir("presets")
+        self.visible_saving_quality = -1
+        self.visible_saving_format = ".jpg"
+        self.invisible_saving_quality = 95
+        self.invisible_saving_format = ".jpg"
+        self.init_settings()
 
     def init_menu(self):
         self.menus.action_open.triggered.connect(self.open_file)
@@ -222,8 +247,11 @@ class MainWindow(QMainWindow):
                                                                presets_path))
         self.menus.action_close.triggered.connect(
             self.main_layout.sidebar.navigation.remove_selected_item)
+        self.menus.action_set_quality.triggered.connect(
+            self.get_quality_setting)
         self.menuBar().addMenu(self.menus.menu_watermark)
         self.menuBar().addMenu(self.menus.menu_settings)
+        self.menuBar().addMenu(self.menus.menu_about)
 
     def init_status_bar(self):
         self.statusBar().addPermanentWidget(self.item_pos)
@@ -234,6 +262,45 @@ class MainWindow(QMainWindow):
         size.setHeight(int(size.height() * 0.7))
         size.setWidth(int(size.width() * 0.7))
         self.setGeometry(size)
+
+    def init_settings(self):
+        if not os.path.isfile("settings.yaml"):
+            self.save_settings()
+        else:
+            self.load_settings()
+
+    def settings_to_dict(self):
+        settings = {"visible watermarking":
+                        {"saving quality": self.visible_saving_quality,
+                         "saving format": self.visible_saving_format},
+                    "invisible watermarking":
+                        {"saving quality": self.invisible_saving_quality,
+                         "saving format": self.invisible_saving_format}}
+        return settings
+
+    def settings_from_dict(self, settings_dict):
+        self.visible_saving_quality = int(settings_dict["visible "
+                                                        "watermarking"][
+                                              "saving quality"])
+        self.visible_saving_format = settings_dict["visible " \
+                                                   "watermarking"][
+            "saving format"]
+        self.invisible_saving_quality = int(settings_dict["invisible "
+                                                          "watermarking"][
+                                                "saving quality"])
+        self.invisible_saving_format = settings_dict["invisible " \
+                                                     "watermarking"][
+            "saving format"]
+
+    def load_settings(self):
+        with open("settings.yaml", "r") as settings_file:
+            settings = yaml.load(settings_file, yaml.FullLoader)
+        self.settings_from_dict(settings)
+
+    def save_settings(self):
+        settings = self.settings_to_dict()
+        with open("settings.yaml", "w") as settings_file:
+            yaml.dump(settings, settings_file, sort_keys=False)
 
     def open_file(self, add=False):
         self.main_layout.image_editor.scene().clearSelection()
@@ -246,6 +313,7 @@ class MainWindow(QMainWindow):
                    "*.xpm *.XPM)")
         files_count = len(loaded_images[0])
         if files_count > 0:
+            self.main_layout.sidebar.navigation.currentItemChanged.disconnect()
             loaded_images_normalized = [os.path.normpath(image) for image in
                                         loaded_images[0]]
             if add:
@@ -258,9 +326,10 @@ class MainWindow(QMainWindow):
                 self.main_layout.sidebar.navigation.loaded_images = \
                     loaded_images_normalized
             self.main_layout.sidebar.navigation.update_navbar()
-            if not add:
-                self.main_layout.sidebar.navigation.setCurrentRow(0)
-                self.main_layout.load_image(loaded_images_normalized[0])
+            self.main_layout.sidebar.navigation.currentItemChanged.connect(
+                lambda current, previous:
+                self.main_layout.load_image(current.data(Qt.UserRole)))
+            self.main_layout.sidebar.navigation.setCurrentRow(0)
             self.main_layout.sidebar.log_text(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
@@ -269,6 +338,7 @@ class MainWindow(QMainWindow):
             self.menus.action_save_as.setEnabled(True)
             self.menus.action_save_preset.setEnabled(True)
             self.menus.action_close.setEnabled(True)
+            self.menus.action_load_preset.setEnabled(True)
         else:
             self.main_layout.sidebar.log_text("Opening files canceled.")
 
@@ -335,31 +405,50 @@ class MainWindow(QMainWindow):
                 if len(preset_name) > 0:
                     is_name_valid = is_preset_name_valid(preset_name)
                     if not is_name_valid:
-                        error = QMessageBox(QMessageBox.Critical,
+                        error = QMessageBox(QMessageBox.Warning,
                                             "Invalid name",
                                             "A preset with that name already "
-                                            "exists.",
-                                            QMessageBox.Ok)
-                        error.exec_()
+                                            "exists. Would you like to "
+                                            "overwrite?",
+                                            QMessageBox.Ok |
+                                            QMessageBox.Cancel)
+                        error.setWindowIcon(self.icon)
+                        result = error.exec()
+                        if result == QMessageBox.Ok:
+                            os.remove(os.path.join("presets",
+                                                   f"{preset_name}.yaml"))
+                            is_name_valid = True
                 else:
                     error = QMessageBox(QMessageBox.Critical, "Invalid name",
                                         "Name can't be empty.",
                                         QMessageBox.Ok)
+                    error.setWindowIcon(self.icon)
                     error.exec_()
             else:
                 return
         if ok:
-            scene_items = self.main_layout.image_editor.scene().items()
-            items_list = []
-            for item in scene_items:
-                if type(item) == CustomQGraphicsTextItem or type(
-                        item) == CustomQGraphicsPixmapItem:
-                    items_list.append(item.get_config())
-            preset_dir = os.path.join("presets",
-                                      f"{slugify(preset_name)}.yaml")
-            preset_file = open(preset_dir, "w")
-            yaml.dump_all(items_list, preset_file, sort_keys=False)
-            preset_file.close()
+            try:
+                scene_items = self.main_layout.image_editor.scene().items()
+                items_list = []
+                for item in scene_items:
+                    if type(item) == CustomQGraphicsTextItem or type(
+                            item) == CustomQGraphicsPixmapItem:
+                        items_list.append(item.get_config())
+                preset_dir = os.path.join("presets",
+                                          f"{slugify(preset_name)}.yaml")
+                preset_file = open(preset_dir, "w")
+                yaml.dump_all(items_list, preset_file, sort_keys=False)
+                preset_file.close()
+                self.main_layout.sidebar.log_text(f"Successfully saved "
+                                                  f"preset ["
+                                                  f"{preset_name}.yaml].")
+            except:
+                self.main_layout.sidebar.log_text(f"Error while saving "
+                                                  f"preset ["
+                                                  f"{preset_name}.yaml]. "
+                                                  f"The preset was NOT "
+                                                  f"saved.", "red")
+            self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def get_preset_name(self):
         presets = []
@@ -407,9 +496,13 @@ class MainWindow(QMainWindow):
             path_display.text()))
         dialog.exec_()
 
-    def apply_preset_to_image(self, preset, image_path, output_path):
-        scene = QGraphicsScene()
-        self.main_layout.load_image(image_path, scene, for_user=False)
+    def apply_preset_to_image(self, preset, image_path, output_path,
+                              for_user=False):
+        if for_user:
+            scene = self.main_layout.image_editor.scene()
+        else:
+            scene = QGraphicsScene()
+        self.main_layout.load_image(image_path, scene, for_user=for_user)
         for item in preset:
             if item["item_type"] == "text":
                 new_item = CustomQGraphicsTextItem()
@@ -435,33 +528,37 @@ class MainWindow(QMainWindow):
                                                   f"(Exception: {e}.\n"
                                                   f"Stopping...", "red")
                 return 1
-        image_name = os.path.basename(image_path)
-        try:
-            unique_name = generate_unique_file_name(image_name, output_path)
-        except:
-            self.main_layout.sidebar.log_text(f"Ouptut directory ["
-                                              f"{output_path}] is invalid. "
-                                              f"Stopping...", "red")
-            return 1
-        save_path = os.path.join(output_path, unique_name)
-        result = save_file(scene=scene,
-                           file_name=save_path)
-        if result:
-            self.main_layout.sidebar.log_text(f"{image_name}\n"
-                                              f"Error while saving to "
-                                              f"specified "
-                                              f"directory: [{save_path}]. "
-                                              f"File "
-                                              f"[{unique_name}] was "
-                                              f"NOT saved. Stopping ...",
-                                              "red")
-            return 1
-        else:
-            self.main_layout.sidebar.log_text(f"{image_name}\n"
-                                              f"File "
-                                              f"[{unique_name}] saved to"
-                                              f" [{output_path}].")
-            return 0
+        if not for_user:
+            image_name = os.path.basename(image_path)
+            try:
+                unique_name = generate_unique_file_name(image_name,
+                                                        output_path)
+            except:
+                self.main_layout.sidebar.log_text(f"Ouptut directory ["
+                                                  f"{output_path}] is "
+                                                  f"invalid. "
+                                                  f"Stopping...", "red")
+                return 1
+            save_path = os.path.join(output_path, unique_name)
+            result = save_file(scene=scene,
+                               file_name=save_path)
+            if result:
+                self.main_layout.sidebar.log_text(f"{image_name}\n"
+                                                  f"Error while saving to "
+                                                  f"specified "
+                                                  f"directory: [{save_path}]. "
+                                                  f"File "
+                                                  f"[{unique_name}] was "
+                                                  f"NOT saved. Stopping ...",
+                                                  "red")
+                return 1
+            else:
+                self.main_layout.sidebar.log_text(f"{image_name}\n"
+                                                  f"File "
+                                                  f"[{unique_name}] saved to"
+                                                  f" [{output_path}].")
+                return 0
+        return 0
 
     def apply_preset(self, preset_name, mode, output_path):
         if not os.path.exists(output_path):
@@ -504,3 +601,122 @@ class MainWindow(QMainWindow):
         self.main_layout.sidebar.log_text(f"Finished applying preset ["
                                           f"{preset_name}].")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
+
+    def get_quality_setting(self):
+        dialog = QDialog(self)
+        dialog.setModal(True)
+        dialog.setWindowIcon(self.icon)
+        dialog.setWindowTitle("Set quality of saved images")
+        dialog_layout = QVBoxLayout()
+        visible_group = QGroupBox("Visible watermarking")
+        visible_layout = QVBoxLayout()
+        visible_layout.addWidget(QLabel("Quality"))
+        visible_layout.addWidget(QLabel("Specify 0 to obtain small compressed "
+                                        "files, 100 for large uncompressed "
+                                        "files, -1 for default behavior."))
+        visible_slider_layout = QHBoxLayout()
+        visible_quality_slider = QSlider(Qt.Horizontal, dialog)
+        visible_quality_slider.setTickPosition(QSlider.TicksBelow)
+        visible_quality_slider.setRange(0, 100)
+        visible_quality_slider.setSingleStep(10)
+        visible_quality_slider.setValue(self.visible_saving_quality)
+        visible_quality_value = QLabel(f"{self.visible_saving_quality}")
+        visible_quality_slider.valueChanged.connect(lambda:
+                                                    visible_quality_value.setText(
+                                                        f"{visible_quality_slider.value()}"))
+        visible_slider_layout.addWidget(visible_quality_slider)
+        visible_slider_layout.addWidget(visible_quality_value)
+        visible_layout.addLayout(visible_slider_layout)
+        visible_reset_button = QPushButton("Reset to default")
+        visible_reset_button.clicked.connect(lambda:
+                                             (visible_quality_slider.setValue(
+                                                 0),
+                                              visible_quality_value.setText(
+                                                  "-1")))
+        visible_layout.addWidget(visible_reset_button)
+        line1 = QFrame(dialog)
+        line1.setFrameShape(QFrame.HLine)
+        line1.setFrameShadow(QFrame.Sunken)
+        visible_layout.addWidget(line1)
+        visible_layout.addWidget(QLabel("Image format"))
+        visible_layout.addWidget(QLabel("This setting is used when saving "
+                                        "batches of files after applying "
+                                        "a preset."))
+        visible_formats_combo = QComboBox(dialog)
+        visible_formats_combo.addItems([".bmp", ".jpg", ".jpeg", ".png",
+                                        ".ppm", ".xbm", ".xpm"])
+        visible_formats_combo.setCurrentText(self.visible_saving_format)
+        visible_layout.addWidget(visible_formats_combo)
+        visible_group.setLayout(visible_layout)
+        dialog_layout.addWidget(visible_group)
+        invisible_group = QGroupBox("Invisible watermarking")
+        invisible_layout = QVBoxLayout()
+        invisible_layout.addWidget(QLabel("Image format"))
+        invisible_formats_combo = QComboBox(dialog)
+        invisible_formats_combo.addItems([".jpg", ".jpeg", ".png", ".bmp",
+                                          ".tiff"])
+        invisible_formats_combo.setCurrentText(self.invisible_saving_format)
+        invisible_layout.addWidget(invisible_formats_combo)
+        line2 = QFrame(dialog)
+        line2.setFrameShape(QFrame.HLine)
+        line2.setFrameShadow(QFrame.Sunken)
+        invisible_layout.addWidget(line2)
+        invisible_layout.addWidget(QLabel("Quality"))
+        invisible_layout.addWidget(QLabel("This setting is only used when "
+                                          "selected format is .jpg/.jpeg. "
+                                          "Select 1 for lowest quality, "
+                                          "95 for best quality."))
+        invisible_quality_slider_layout = QHBoxLayout()
+        invisible_quality_slider = QSlider(Qt.Horizontal, dialog)
+        invisible_quality_slider.setRange(1, 95)
+        invisible_quality_slider.setValue(self.invisible_saving_quality)
+        invisible_quality_slider.setTickPosition(QSlider.TicksBelow)
+        invisible_quality_value = QLabel(f"{self.invisible_saving_quality}")
+        invisible_quality_slider.valueChanged.connect(lambda:
+                                                      invisible_quality_value.setText(
+                                                          f"{
+        invisible_quality_slider.value()}"))
+        invisible_quality_slider.setEnabled(
+            invisible_formats_combo.currentText() in [
+                ".jpg", ".jpeg"])
+        invisible_formats_combo.currentTextChanged.connect(lambda current:
+                                                           invisible_quality_slider.setEnabled(
+                                                               current in [
+                                                                   ".jpg",
+                                                                   ".jpeg"]))
+        invisible_quality_slider_layout.addWidget(invisible_quality_slider)
+        invisible_quality_slider_layout.addWidget(invisible_quality_value)
+        invisible_layout.addLayout(invisible_quality_slider_layout)
+        invisible_group.setLayout(invisible_layout)
+        dialog_layout.addWidget(invisible_group)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok |
+                                   QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        dialog_layout.addWidget(buttons)
+        dialog.setLayout(dialog_layout)
+        result = dialog.exec()
+        self.main_layout.sidebar.log_text("Open quality settings...")
+        if result == QDialog.Accepted:
+            try:
+                self.visible_saving_quality = int(visible_quality_value.text())
+                self.visible_saving_format = \
+                    visible_formats_combo.currentText()
+                self.invisible_saving_quality = int(
+                    invisible_quality_value.text())
+                self.invisible_saving_format = \
+                    invisible_formats_combo.currentText()
+                self.save_settings()
+                self.main_layout.sidebar.log_text(
+                    "Quality setting successfully "
+                    "saved.")
+            except Exception as e:
+                self.main_layout.sidebar.log_text(f"Error while saving "
+                                                  f"quality settings:\n"
+                                                  f"{e}.\n"
+                                                  f"Settings were NOT saved.",
+                                                  "red")
+                self.main_layout.sidebar.tabs.setCurrentIndex(1)
+                return
+        else:
+            self.main_layout.sidebar.log_text("Cancel setting quality.")
