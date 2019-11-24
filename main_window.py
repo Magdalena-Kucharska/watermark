@@ -378,7 +378,8 @@ class MainWindow(QMainWindow):
                                                "X11 Pixmap (*.xpm)")
         if file_name:
             result = save_file(self.main_layout.image_editor.scene(),
-                               file_name, file_format)
+                               file_name, file_format,
+                               self.visible_saving_quality)
             if not result:
                 self.main_layout.sidebar.log_text(f"File [{file_name}] "
                                                   f"successfully saved.")
@@ -530,6 +531,9 @@ class MainWindow(QMainWindow):
                 return 1
         if not for_user:
             image_name = os.path.basename(image_path)
+            image_name_split = image_name.split('.')
+            image_name = '.'.join(
+                image_name_split[:-1]) + self.visible_saving_format
             try:
                 unique_name = generate_unique_file_name(image_name,
                                                         output_path)
@@ -541,7 +545,8 @@ class MainWindow(QMainWindow):
                 return 1
             save_path = os.path.join(output_path, unique_name)
             result = save_file(scene=scene,
-                               file_name=save_path)
+                               file_name=save_path,
+                               quality=self.visible_saving_quality)
             if result:
                 self.main_layout.sidebar.log_text(f"{image_name}\n"
                                                   f"Error while saving to "
