@@ -11,10 +11,12 @@ import main_window
 
 class Invisible3DDCTBased:
 
-    def __init__(self, Q=60, channel='b'):
+    def __init__(self, Q=60, channel='b', output_format=".jpg", quality=95):
         self.Q = Q
         channels = {'r': 0, 'g': 1, 'b': 2}
         self.channel = channels[channel]
+        self.output_format = output_format
+        self.quality = quality
 
     def encode(self, cover_image_path, watermark_path, output_path):
         image = np.array(Image.open(cover_image_path).convert("RGB"))
@@ -69,10 +71,17 @@ class Invisible3DDCTBased:
         watermarked_image = image_blocks[:image.shape[0], :image.shape[1]]
 
         save_file_name = os.path.basename(cover_image_path)
+        save_file_name_split = save_file_name.split('.')
+        save_file_name = '.'.join(
+            save_file_name_split[:-1]) + self.output_format
         unique_name = main_window.generate_unique_file_name(save_file_name,
                                                             output_path)
         save_path = os.path.join(output_path, unique_name)
-        Image.fromarray(np.uint8(watermarked_image)).save(save_path)
+        if self.output_format in [".jpg", ".jpeg"]:
+            Image.fromarray(np.uint8(watermarked_image)).save(save_path,
+                                                              quality=self.quality)
+        else:
+            Image.fromarray(np.uint8(watermarked_image)).save(save_path)
 
     def decode(self, watermarked_image_path, output_path):
         watermarked_image = np.array(watermarked_image_path)
