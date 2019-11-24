@@ -13,11 +13,14 @@ from PySide2.QtWidgets import QMainWindow, QMenu, QAction, \
     QDesktopWidget, QLabel, QHBoxLayout, QGraphicsView, \
     QGraphicsScene, QGraphicsPixmapItem, QInputDialog, QMessageBox, \
     QGraphicsDropShadowEffect, QDialog, QVBoxLayout, QComboBox, QPushButton, \
-    QDialogButtonBox, QGroupBox, QLineEdit, QProgressDialog, QSlider, QFrame
+    QDialogButtonBox, QGroupBox, QLineEdit, QProgressDialog, QSlider, \
+    QSpinBox, \
+    QApplication
 from slugify import slugify
 
 import sidebar
 from custom_items import CustomQGraphicsTextItem, CustomQGraphicsPixmapItem
+from invisible_watermark import Invisible3DDCTBased
 
 
 class MainLayout(QHBoxLayout):
@@ -249,6 +252,8 @@ class MainWindow(QMainWindow):
             self.main_layout.sidebar.navigation.remove_selected_item)
         self.menus.action_set_quality.triggered.connect(
             self.get_quality_setting)
+        self.menus.action_encode.triggered.connect(
+            self.get_invisible_watermark_settings)
         self.menuBar().addMenu(self.menus.menu_watermark)
         self.menuBar().addMenu(self.menus.menu_settings)
         self.menuBar().addMenu(self.menus.menu_about)
@@ -592,17 +597,18 @@ class MainWindow(QMainWindow):
             progress.setValue(
                 len(self.main_layout.sidebar.navigation.loaded_images))
         else:
-            progress = QProgressDialog(f"Applying preset [{preset_name}]...",
-                                       "", 0, 1, self)
-            progress.setCancelButton(None)
-            progress.setWindowModality(Qt.WindowModal)
-            progress.setWindowTitle("Watermark")
-            progress.setWindowIcon(self.icon)
+            dialog = QMessageBox(QMessageBox.Information, "Watermark",
+                                 f"Applying preset [{preset_name}]...")
+            dialog.setStandardButtons(QMessageBox.NoButton)
+            dialog.setWindowFlags(Qt.WindowTitleHint)
+            dialog.setWindowIcon(self.icon)
+            dialog.open()
+            QApplication.processEvents()
             self.apply_preset_to_image(items,
                                        self.main_layout.sidebar.navigation.
                                        currentItem().data(Qt.UserRole),
                                        output_path)
-            progress.setValue(1)
+            dialog.close()
         self.main_layout.sidebar.log_text(f"Finished applying preset ["
                                           f"{preset_name}].")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
@@ -615,10 +621,15 @@ class MainWindow(QMainWindow):
         dialog_layout = QVBoxLayout()
         visible_group = QGroupBox("Visible watermarking")
         visible_layout = QVBoxLayout()
-        visible_layout.addWidget(QLabel("Quality"))
-        visible_layout.addWidget(QLabel("Specify 0 to obtain small compressed "
-                                        "files, 100 for large uncompressed "
-                                        "files, -1 for default behavior."))
+        visible_quality_group = QGroupBox("Quality", visible_group)
+        visible_quality_desc = QLabel("Specify 0 to obtain small compressed "
+                                      "files, 100 for large uncompressed "
+                                      "files, "
+                                      "-1 for default behavior.")
+        visible_quality_desc.setWordWrap(True)
+        visible_quality_desc.setMinimumSize(visible_quality_desc.sizeHint())
+        visible_quality_layout = QVBoxLayout()
+        visible_quality_layout.addWidget(visible_quality_desc)
         visible_slider_layout = QHBoxLayout()
         visible_quality_slider = QSlider(Qt.Horizontal, dialog)
         visible_quality_slider.setTickPosition(QSlider.TicksBelow)
@@ -632,46 +643,54 @@ class MainWindow(QMainWindow):
                     setText(f"{visible_quality_slider.value()}"))
         visible_slider_layout.addWidget(visible_quality_slider)
         visible_slider_layout.addWidget(visible_quality_value)
-        visible_layout.addLayout(visible_slider_layout)
+        visible_quality_layout.addLayout(visible_slider_layout)
         visible_reset_button = QPushButton("Reset to default")
         visible_reset_button.clicked.connect(lambda:
                                              (visible_quality_slider.setValue(
                                                  0),
                                               visible_quality_value.setText(
                                                   "-1")))
-        visible_layout.addWidget(visible_reset_button)
-        line1 = QFrame(dialog)
-        line1.setFrameShape(QFrame.HLine)
-        line1.setFrameShadow(QFrame.Sunken)
-        visible_layout.addWidget(line1)
-        visible_layout.addWidget(QLabel("Image format"))
-        visible_layout.addWidget(QLabel("This setting is used when saving "
-                                        "batches of files after applying "
-                                        "a preset."))
+        visible_quality_layout.addWidget(visible_reset_button)
+        visible_quality_group.setLayout(visible_quality_layout)
+        visible_layout.addWidget(visible_quality_group)
+        visible_format_group = QGroupBox("Image format", visible_group)
+        visible_format_layout = QVBoxLayout()
+        visible_format_desc = QLabel(
+            "This setting is used when saving batches "
+            "of files after applying a preset.")
+        visible_format_desc.setWordWrap(True)
+        visible_format_desc.setMinimumSize(visible_format_desc.sizeHint())
+        visible_format_layout.addWidget(visible_format_desc)
         visible_formats_combo = QComboBox(dialog)
         visible_formats_combo.addItems([".bmp", ".jpg", ".jpeg", ".png",
                                         ".ppm", ".xbm", ".xpm"])
         visible_formats_combo.setCurrentText(self.visible_saving_format)
-        visible_layout.addWidget(visible_formats_combo)
+        visible_format_layout.addWidget(visible_formats_combo)
+        visible_format_group.setLayout(visible_format_layout)
+        visible_layout.addWidget(visible_format_group)
         visible_group.setLayout(visible_layout)
         dialog_layout.addWidget(visible_group)
         invisible_group = QGroupBox("Invisible watermarking")
         invisible_layout = QVBoxLayout()
-        invisible_layout.addWidget(QLabel("Image format"))
+        invisible_format_group = QGroupBox("Image format")
+        invisible_format_layout = QVBoxLayout()
         invisible_formats_combo = QComboBox(dialog)
         invisible_formats_combo.addItems([".jpg", ".jpeg", ".png", ".bmp",
                                           ".tiff"])
         invisible_formats_combo.setCurrentText(self.invisible_saving_format)
-        invisible_layout.addWidget(invisible_formats_combo)
-        line2 = QFrame(dialog)
-        line2.setFrameShape(QFrame.HLine)
-        line2.setFrameShadow(QFrame.Sunken)
-        invisible_layout.addWidget(line2)
-        invisible_layout.addWidget(QLabel("Quality"))
-        invisible_layout.addWidget(QLabel("This setting is only used when "
-                                          "selected format is .jpg/.jpeg. "
-                                          "Select 1 for lowest quality, "
-                                          "95 for best quality."))
+        invisible_format_layout.addWidget(invisible_formats_combo)
+        invisible_format_group.setLayout(invisible_format_layout)
+        invisible_layout.addWidget(invisible_format_group)
+        invisible_quality_group = QGroupBox("Quality")
+        invisible_quality_layout = QVBoxLayout()
+        invisible_quality_desc = QLabel("This setting is only used when "
+                                        "selected format is .jpg/.jpeg. "
+                                        "Select 1 for lowest quality, "
+                                        "95 for best quality.")
+        invisible_quality_desc.setWordWrap(True)
+        invisible_quality_desc.setMinimumSize(
+            invisible_quality_desc.sizeHint())
+        invisible_quality_layout.addWidget(invisible_quality_desc)
         invisible_quality_slider_layout = QHBoxLayout()
         invisible_quality_slider = QSlider(Qt.Horizontal, dialog)
         invisible_quality_slider.setRange(1, 95)
@@ -692,7 +711,9 @@ class MainWindow(QMainWindow):
                                                                    ".jpeg"]))
         invisible_quality_slider_layout.addWidget(invisible_quality_slider)
         invisible_quality_slider_layout.addWidget(invisible_quality_value)
-        invisible_layout.addLayout(invisible_quality_slider_layout)
+        invisible_quality_layout.addLayout(invisible_quality_slider_layout)
+        invisible_quality_group.setLayout(invisible_quality_layout)
+        invisible_layout.addWidget(invisible_quality_group)
         invisible_group.setLayout(invisible_layout)
         dialog_layout.addWidget(invisible_group)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok |
@@ -726,3 +747,140 @@ class MainWindow(QMainWindow):
                 return
         else:
             self.main_layout.sidebar.log_text("Cancel setting quality.")
+
+    def get_invisible_watermark_settings(self):
+        dialog = QDialog()
+        dialog.setModal(True)
+        dialog.setWindowIcon(self.icon)
+        dialog.setWindowTitle("Invisible watermarking settings")
+        dialog_layout = QVBoxLayout()
+
+        mode_combo = QComboBox(dialog)
+        mode_combo.addItems(["Encode watermark in the current image",
+                             "Encode watermark in all loaded images"])
+        dialog_layout.addWidget(mode_combo)
+
+        q_group = QGroupBox("Watermarking strength")
+        q_layout = QVBoxLayout()
+        q_desc = QLabel("Adjust the Q parameter. Bigger values mean more "
+                        "robust watermark at the greater risk of making "
+                        "noticeable changes to the cover image.")
+        q_desc.setWordWrap(True)
+        q_desc.setMinimumSize(q_desc.sizeHint())
+        q_layout.addWidget(q_desc)
+        q_input_layout = QHBoxLayout()
+        q_input_layout.addWidget(QLabel("Q = "))
+        q_input = QSpinBox()
+        q_input.setRange(5, 60)
+        q_input.setValue(60)
+        q_input_layout.addWidget(q_input)
+        q_layout.addLayout(q_input_layout)
+        q_group.setLayout(q_layout)
+        dialog_layout.addWidget(q_group)
+        channel_group = QGroupBox("Channel")
+        channel_layout = QVBoxLayout()
+        channel_desc = QLabel("Set channel in which the watermark should be "
+                              "encoded. Recommended are G or B.")
+        channel_desc.setWordWrap(True)
+        channel_desc.setMinimumSize(channel_desc.sizeHint())
+        channel_layout.addWidget(channel_desc)
+        channel_layout.addWidget(QLabel("R - Red, G - Green, B - Blue"))
+        channel_combo = QComboBox(dialog)
+        channel_combo.addItems(["R", "G", "B"])
+        channel_combo.setCurrentText("B")
+        channel_layout.addWidget(channel_combo)
+        channel_group.setLayout(channel_layout)
+        dialog_layout.addWidget(channel_group)
+        output_dir_group = QGroupBox("Output directory")
+        output_dir_group_layout = QVBoxLayout()
+        output_dir_text = QLineEdit(os.path.dirname(os.path.realpath(
+            __file__)))
+        output_dir_button = QPushButton("Set output directory")
+        output_dir_dialog = QFileDialog()
+        output_dir_dialog.setFileMode(QFileDialog.Directory)
+        output_dir_dialog.setOption(QFileDialog.ShowDirsOnly, True)
+        output_dir_button. \
+            clicked. \
+            connect(lambda: output_dir_text.
+                    setText(os.path.normpath(output_dir_dialog.
+                                             getExistingDirectory())))
+
+        output_dir_group_layout.addWidget(output_dir_text)
+        output_dir_group_layout.addWidget(output_dir_button)
+        output_dir_group.setLayout(output_dir_group_layout)
+        dialog_layout.addWidget(output_dir_group)
+
+        watermark_group = QGroupBox("Image to encode")
+        watermark_layout = QVBoxLayout()
+        watermark_dir_text = QLineEdit()
+        watermark_dir_button = QPushButton("Choose image")
+        watermark_dialog = QFileDialog(
+            filter="Image files (*.bmp *.BMP *.jpeg "
+                   "*.JPEG *.jpg *.JPG *.png *.PNG )")
+        watermark_dir_button. \
+            clicked. \
+            connect(lambda: watermark_dir_text.
+                    setText(os.path.normpath(watermark_dialog.
+                                             getOpenFileName()[0])))
+        watermark_layout.addWidget(watermark_dir_text)
+        watermark_layout.addWidget(watermark_dir_button)
+        watermark_group.setLayout(watermark_layout)
+        dialog_layout.addWidget(watermark_group)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setEnabled(False)
+        output_dir_text.textChanged.connect(lambda text: buttons.button(
+            QDialogButtonBox.Ok).setEnabled(bool(len(text)) and bool(len(
+            watermark_dir_text.text()))))
+        watermark_dir_text.textChanged.connect(lambda text: buttons.button(
+            QDialogButtonBox.Ok).setEnabled(bool(len(text)) and bool(len(
+            output_dir_text.text()))))
+        dialog_layout.addWidget(buttons)
+        dialog.setLayout(dialog_layout)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        self.main_layout.sidebar.log_text("Open invisible watermarking "
+                                          "settings...")
+        result = dialog.exec()
+        if result == QDialog.Accepted:
+            self.encode_invisible_watermark(q_input.value(),
+                                            channel_combo.currentText(),
+                                            mode_combo.currentText(),
+                                            watermark_dir_text.text(),
+                                            output_dir_text.text())
+
+    def encode_invisible_watermark(self, Q, channel, mode,
+                                   watermark_path, output_dir):
+        invisible_watermark = Invisible3DDCTBased(Q,
+                                                  channel.lower(),
+                                                  self.invisible_saving_format,
+                                                  self.invisible_saving_quality)
+        if mode == "Encode watermark in the current image":
+            image_path = self.main_layout.sidebar. \
+                navigation.currentItem().data(Qt.UserRole)
+            try:
+                dialog = QMessageBox(QMessageBox.Information, "Watermark",
+                                     "Encoding. It may take a while, please "
+                                     "wait...")
+                dialog.setStandardButtons(QMessageBox.NoButton)
+                dialog.setWindowFlags(Qt.WindowTitleHint)
+                dialog.setWindowIcon(self.icon)
+                dialog.open()
+                QApplication.processEvents()
+                invisible_watermark.encode(image_path, watermark_path,
+                                           output_dir)
+                dialog.close()
+                self.main_layout.sidebar.log_text(f"Successfully encoded "
+                                                  f"invisible watermark. "
+                                                  f"Output image saved to ["
+                                                  f"{output_dir}].")
+            except Exception as e:
+                self.main_layout.sidebar.log_text(f"Error while encoding "
+                                                  f"invisible watermark:\n"
+                                                  f"{e}. Output image was "
+                                                  f"NOT saved. Stopping...",
+                                                  "red")
+                self.main_layout.sidebar.tabs.setCurrentIndex(1)
+                return
+            self.main_layout.sidebar.tabs.setCurrentIndex(1)
