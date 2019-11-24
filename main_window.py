@@ -621,9 +621,10 @@ class MainWindow(QMainWindow):
         visible_quality_slider.setSingleStep(10)
         visible_quality_slider.setValue(self.visible_saving_quality)
         visible_quality_value = QLabel(f"{self.visible_saving_quality}")
-        visible_quality_slider.valueChanged.connect(lambda:
-                                                    visible_quality_value.setText(
-                                                        f"{visible_quality_slider.value()}"))
+        visible_quality_slider. \
+            valueChanged. \
+            connect(lambda: visible_quality_value.
+                    setText(f"{visible_quality_slider.value()}"))
         visible_slider_layout.addWidget(visible_quality_slider)
         visible_slider_layout.addWidget(visible_quality_value)
         visible_layout.addLayout(visible_slider_layout)
@@ -672,10 +673,10 @@ class MainWindow(QMainWindow):
         invisible_quality_slider.setValue(self.invisible_saving_quality)
         invisible_quality_slider.setTickPosition(QSlider.TicksBelow)
         invisible_quality_value = QLabel(f"{self.invisible_saving_quality}")
-        invisible_quality_slider.valueChanged.connect(lambda:
-                                                      invisible_quality_value.setText(
-                                                          f"{
-        invisible_quality_slider.value()}"))
+        invisible_quality_slider. \
+            valueChanged.connect(
+            lambda: invisible_quality_value.setText(
+                f"{invisible_quality_slider.value()}"))
         invisible_quality_slider.setEnabled(
             invisible_formats_combo.currentText() in [
                 ".jpg", ".jpeg"])
