@@ -1,14 +1,14 @@
 import datetime
 import os
 
-from PySide2.QtCore import Qt, QLocale
-from PySide2.QtGui import QFont, QFontDatabase, QIntValidator, \
-    QDoubleValidator, QColor
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QFont, QFontDatabase, QColor
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel, \
-    QComboBox, QGroupBox, QCheckBox, QLineEdit, \
-    QSizePolicy, QStackedLayout, QListWidget, QListView, QProgressDialog, \
+    QComboBox, QGroupBox, QCheckBox, QSizePolicy, QStackedLayout, \
+    QListWidget, \
+    QListView, QProgressDialog, \
     QListWidgetItem, QPushButton, QColorDialog, QSlider, QDial, QTextEdit, \
-    QTabWidget, QMessageBox, QScrollArea
+    QTabWidget, QMessageBox, QScrollArea, QSpinBox, QDoubleSpinBox
 
 import custom_items
 
@@ -117,8 +117,7 @@ def set_font_style(style, text_item):
 
 def set_font_size(size, text_item):
     font = text_item.font()
-    (size_double, ok) = QLocale.toDouble(QLocale.system(), size)
-    font.setPointSizeF(size_double)
+    font.setPointSizeF(size)
     text_item.setFont(font)
 
 
@@ -188,7 +187,8 @@ def init_kerning_widget(text_item):
 def init_letter_spacing_widget(text_item):
     letter_spacing_layout = QVBoxLayout()
     letter_spacing_type_combo_box = QComboBox()
-    letter_spacing_value_input = QLineEdit()
+    letter_spacing_value_input = QSpinBox()
+    letter_spacing_value_input.setRange(-10000, 10000)
 
     letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
                             QFont.AbsoluteSpacing: "Absolute spacing"}
@@ -206,14 +206,13 @@ def init_letter_spacing_widget(text_item):
 
     letter_spacing_layout.addWidget(letter_spacing_type_combo_box)
 
-    letter_spacing_value_input.setValidator(QIntValidator(-10000, 10000))
-    current_spacing = str(int(text_item.font().letterSpacing()))
+    current_spacing = int(text_item.font().letterSpacing())
     if current_spacing_type == QFont.PercentageSpacing and \
-            current_spacing == "0":
-        letter_spacing_value_input.setText("100")
+            current_spacing == 0:
+        letter_spacing_value_input.setValue(100)
     else:
-        letter_spacing_value_input.setText(current_spacing)
-    letter_spacing_value_input.returnPressed.connect(lambda:
+        letter_spacing_value_input.setValue(current_spacing)
+    letter_spacing_value_input.valueChanged.connect(lambda:
                                                      set_letter_spacing_value(
                                                          text_item,
                                                          letter_spacing_type_combo_box,
@@ -260,14 +259,13 @@ def init_strikeout_widget(text_item):
 
 
 def init_font_size_layout(text_item):
-    font_size_input = QLineEdit()
-    validator = QDoubleValidator(0.5, 900., 2)
-    validator.setNotation(QDoubleValidator.StandardNotation)
-    font_size_input.setValidator(validator)
-    font_size_input.setText(str(text_item.font().pointSizeF()))
-    font_size_input.returnPressed.connect(lambda:
+    font_size_input = QDoubleSpinBox()
+    font_size_input.setDecimals(2)
+    font_size_input.setRange(0.5, 900.)
+    font_size_input.setValue(text_item.font().pointSizeF())
+    font_size_input.valueChanged.connect(lambda:
                                           set_font_size(
-                                              font_size_input.text(),
+                                              font_size_input.value(),
                                               text_item))
     font_size_layout = QHBoxLayout()
     font_size_layout.addWidget(font_size_input)
@@ -558,7 +556,7 @@ def set_letter_spacing_value(text_item,
                             "Absolute spacing": QFont.AbsoluteSpacing}
     font = text_item.font()
     letter_spacing_type = letter_spacing_type_combo_box.currentText()
-    letter_spacing_value = int(letter_spacing_value_input.text())
+    letter_spacing_value = letter_spacing_value_input.value()
     font.setLetterSpacing(letter_spacing_types[letter_spacing_type],
                           letter_spacing_value)
     text_item.setFont(font)
@@ -583,7 +581,7 @@ def set_letter_spacing_type(text_item, letter_spacing_type,
         else:
             units_label.setText("px")
     if letter_spacing_value_input:
-        letter_spacing_value_input.setText(str(spacing))
+        letter_spacing_value_input.setValue(spacing)
 
 
 def set_font_overline(overline, text_item):
