@@ -84,7 +84,7 @@ class Invisible3DDCTBased:
             Image.fromarray(np.uint8(watermarked_image)).save(save_path)
 
     def decode(self, watermarked_image_path, output_path):
-        watermarked_image = np.array(watermarked_image_path)
+        watermarked_image = np.array(Image.open(watermarked_image_path))
         rows, cols = watermarked_image.shape[0], watermarked_image.shape[1]
         while rows % 8 != 0:
             rows += 1
