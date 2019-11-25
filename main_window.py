@@ -259,6 +259,9 @@ class MainWindow(QMainWindow):
             self.get_invisible_encoding_settings)
         self.menus.action_decode.triggered.connect(
             self.get_invisible_decoding_settings)
+        self.menus.action_load_preset.triggered.connect(lambda:
+                                                        self.get_preset_name(
+                                                            load_for_user=True))
         self.menuBar().addMenu(self.menus.menu_watermark)
         self.menuBar().addMenu(self.menus.menu_settings)
         self.menuBar().addMenu(self.menus.menu_about)
@@ -461,7 +464,7 @@ class MainWindow(QMainWindow):
                                                   f"saved.", "red")
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
-    def get_preset_name(self):
+    def get_preset_name(self, load_for_user=False):
         presets = []
         for file in os.listdir("presets"):
             if os.path.isfile(os.path.join("presets", file)) and re.match(
@@ -475,25 +478,27 @@ class MainWindow(QMainWindow):
         presets_combo_box = QComboBox()
         presets_combo_box.addItems(presets)
         layout.addWidget(presets_combo_box)
-        choice_combo_box = QComboBox()
-        choice_combo_box.addItems(["to current image", "to all loaded images"])
-        layout.addWidget(choice_combo_box)
-        group_box = QGroupBox("Output location")
-        group_box_layout = QVBoxLayout()
-        path_display = QLineEdit()
-        path_display.setText(os.path.dirname(os.path.realpath(__file__)))
-        group_box_layout.addWidget(path_display)
-        path_button = QPushButton("Set directory")
-        path_input = QFileDialog()
-        path_input.setFileMode(QFileDialog.Directory)
-        path_input.setOption(QFileDialog.ShowDirsOnly, True)
-        path_button.clicked.connect(lambda:
-                                    path_display.setText(
-                                        os.path.normpath(
-                                            path_input.getExistingDirectory())))
-        group_box_layout.addWidget(path_button)
-        group_box.setLayout(group_box_layout)
-        layout.addWidget(group_box)
+        if not load_for_user:
+            choice_combo_box = QComboBox()
+            choice_combo_box.addItems(
+                ["to current image", "to all loaded images"])
+            layout.addWidget(choice_combo_box)
+            group_box = QGroupBox("Output location")
+            group_box_layout = QVBoxLayout()
+            path_display = QLineEdit()
+            path_display.setText(os.path.dirname(os.path.realpath(__file__)))
+            group_box_layout.addWidget(path_display)
+            path_button = QPushButton("Set directory")
+            path_input = QFileDialog()
+            path_input.setFileMode(QFileDialog.Directory)
+            path_input.setOption(QFileDialog.ShowDirsOnly, True)
+            path_button.clicked.connect(lambda:
+                                        path_display.setText(
+                                            os.path.normpath(
+                                                path_input.getExistingDirectory())))
+            group_box_layout.addWidget(path_button)
+            group_box.setLayout(group_box_layout)
+            layout.addWidget(group_box)
         button_box = QDialogButtonBox(QDialogButtonBox.Ok |
                                       QDialogButtonBox.Cancel)
         button_box.accepted.connect(dialog.accept)
@@ -502,18 +507,24 @@ class MainWindow(QMainWindow):
             button_box.button(QDialogButtonBox.Ok).setEnabled(False)
         layout.addWidget(button_box)
         dialog.setLayout(layout)
-        dialog.accepted.connect(lambda: self.apply_preset(
-            presets_combo_box.currentText(), choice_combo_box.currentText(),
-            path_display.text()))
-        dialog.exec_()
+        if not load_for_user:
+            dialog.accepted.connect(lambda: self.apply_preset(
+                presets_combo_box.currentText(),
+                choice_combo_box.currentText(),
+                path_display.text()))
+        else:
+            dialog.accepted.connect(lambda: self.apply_preset_to_image(
+                self.read_preset(presets_combo_box.currentText()),
+                for_user=True))
+        dialog.exec()
 
-    def apply_preset_to_image(self, preset, image_path, output_path,
+    def apply_preset_to_image(self, preset, image_path="", output_path="",
                               for_user=False):
         if for_user:
             scene = self.main_layout.image_editor.scene()
         else:
             scene = QGraphicsScene()
-        self.main_layout.load_image(image_path, scene, for_user=for_user)
+            self.main_layout.load_image(image_path, scene, for_user=for_user)
         for item in preset:
             if item["item_type"] == "text":
                 new_item = CustomQGraphicsTextItem()
@@ -575,15 +586,19 @@ class MainWindow(QMainWindow):
                 return 0
         return 0
 
+    def read_preset(self, preset_name):
+        items = []
+        with open(os.path.join("presets", preset_name), 'r') as preset_file:
+            for item in yaml.load_all(preset_file, yaml.FullLoader):
+                items.append(item)
+        return items
+
     def apply_preset(self, preset_name, mode, output_path):
         if not os.path.exists(output_path):
             os.makedirs(output_path, exist_ok=True)
         self.main_layout.sidebar.log_text(f"Applying preset ["
                                           f"{preset_name}]...")
-        items = []
-        with open(os.path.join("presets", preset_name), 'r') as preset_file:
-            for item in yaml.load_all(preset_file, yaml.FullLoader):
-                items.append(item)
+        items = self.read_preset(preset_name)
         if mode == "to all loaded images":
             progress = QProgressDialog(f"Applying preset [{preset_name}]...",
                                        "Cancel", 0,
@@ -817,6 +832,10 @@ class MainWindow(QMainWindow):
 
         watermark_group = QGroupBox("Image to encode")
         watermark_layout = QVBoxLayout()
+        watermark_desc = QLabel("Image will be converted to grayscale and "
+                                "resized according to the cover image's size.")
+        watermark_desc.setWordWrap(True)
+        watermark_desc.setMinimumSize(watermark_desc.sizeHint())
         watermark_dir_text = QLineEdit()
         watermark_dir_button = QPushButton("Choose image")
         watermark_dialog = QFileDialog(
@@ -827,6 +846,7 @@ class MainWindow(QMainWindow):
             connect(lambda: watermark_dir_text.
                     setText(os.path.normpath(watermark_dialog.
                                              getOpenFileName()[0])))
+        watermark_layout.addWidget(watermark_desc)
         watermark_layout.addWidget(watermark_dir_text)
         watermark_layout.addWidget(watermark_dir_button)
         watermark_group.setLayout(watermark_layout)
