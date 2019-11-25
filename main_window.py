@@ -98,7 +98,8 @@ class Menus:
         self.menu_invisible = QMenu("Invisible")
         self.action_encode = QAction("Encode invisible watermark...",
                                      self.menu_invisible)
-        self.action_decode = QAction("Decode invisible watermark...",
+        self.action_decode = QAction("Decode invisible watermark from the "
+                                     "current image...",
                                      self.menu_invisible)
         self.menu_invisible.addAction(self.action_encode)
         self.menu_invisible.addAction(self.action_decode)
@@ -227,6 +228,8 @@ class MainWindow(QMainWindow):
         self.main_layout.sidebar.log_text("Ready.")
         if not os.path.exists("presets"):
             os.mkdir("presets")
+        if not os.path.exists("extracted watermarks"):
+            os.mkdir("extracted watermarks")
         self.visible_saving_quality = -1
         self.visible_saving_format = ".jpg"
         self.invisible_saving_quality = 95
@@ -253,7 +256,9 @@ class MainWindow(QMainWindow):
         self.menus.action_set_quality.triggered.connect(
             self.get_quality_setting)
         self.menus.action_encode.triggered.connect(
-            self.get_invisible_watermark_settings)
+            self.get_invisible_encoding_settings)
+        self.menus.action_decode.triggered.connect(
+            self.get_invisible_decoding_settings)
         self.menuBar().addMenu(self.menus.menu_watermark)
         self.menuBar().addMenu(self.menus.menu_settings)
         self.menuBar().addMenu(self.menus.menu_about)
@@ -748,7 +753,7 @@ class MainWindow(QMainWindow):
         else:
             self.main_layout.sidebar.log_text("Cancel setting quality.")
 
-    def get_invisible_watermark_settings(self):
+    def get_invisible_encoding_settings(self):
         dialog = QDialog()
         dialog.setModal(True)
         dialog.setWindowIcon(self.icon)
@@ -856,13 +861,15 @@ class MainWindow(QMainWindow):
                                                   channel.lower(),
                                                   self.invisible_saving_format,
                                                   self.invisible_saving_quality)
+        self.main_layout.sidebar.log_text("Encoding invisible watermark "
+                                          "started.")
         if mode == "Encode watermark in the current image":
             image_path = self.main_layout.sidebar. \
                 navigation.currentItem().data(Qt.UserRole)
+            dialog = QMessageBox(QMessageBox.Information, "Watermark",
+                                 "Encoding. It may take a while, please "
+                                 "wait...")
             try:
-                dialog = QMessageBox(QMessageBox.Information, "Watermark",
-                                     "Encoding. It may take a while, please "
-                                     "wait...")
                 dialog.setStandardButtons(QMessageBox.NoButton)
                 dialog.setWindowFlags(Qt.WindowTitleHint)
                 dialog.setWindowIcon(self.icon)
@@ -881,6 +888,118 @@ class MainWindow(QMainWindow):
                                                   f"{e}. Output image was "
                                                   f"NOT saved. Stopping...",
                                                   "red")
+                dialog.close()
                 self.main_layout.sidebar.tabs.setCurrentIndex(1)
                 return
+        else:
+            progress = QProgressDialog("Encoding watermark...", "Cancel", 0,
+                                       len(self.main_layout.sidebar.
+                                           navigation.loaded_images),
+                                       self)
+            try:
+                progress.setWindowModality(Qt.WindowModal)
+                progress.setWindowTitle("Watermark")
+                progress.setWindowIcon(self.icon)
+                for i, image in enumerate(self.main_layout.sidebar.
+                                                  navigation.loaded_images):
+                    progress.setValue(i)
+                    if progress.wasCanceled():
+                        self.main_layout.sidebar.log_text("Encoding "
+                                                          "watermark "
+                                                          "canceled.")
+                        self.main_layout.sidebar.tabs.setCurrentIndex(1)
+                        return
+                    invisible_watermark.encode(image, watermark_path,
+                                               output_dir)
+                    image_name = os.path.basename(image)
+                    self.main_layout.sidebar.log_text(f"{image_name}\n"
+                                                      f"Successfully encoded.")
+                progress.setValue(len(self.main_layout.sidebar.navigation.
+                                      loaded_images))
+            except Exception as e:
+                self.main_layout.sidebar.log_text(f"Error while encoding:\n"
+                                                  f"{e}.\n"
+                                                  f"Stopping...", "red")
+                progress.setValue(len(self.main_layout.sidebar.navigation.
+                                      loaded_images))
+                self.main_layout.sidebar.tabs.setCurrentIndex(1)
+                return
+        self.main_layout.sidebar.log_text("Encoding watermark finished.")
+        self.main_layout.sidebar.tabs.setCurrentIndex(1)
+
+    def get_invisible_decoding_settings(self):
+        dialog = QDialog()
+        dialog.setModal(True)
+        dialog.setWindowIcon(self.icon)
+        dialog.setWindowTitle("Invisible watermark decoding settings")
+        dialog_layout = QVBoxLayout()
+        settings_group = QGroupBox("Watermarking settings")
+        settings_layout = QVBoxLayout()
+        settings_desc = QLabel("Please specify what settings were used to "
+                               "encode the watermark.")
+        settings_desc.setWordWrap(True)
+        settings_desc.setMinimumSize(settings_desc.sizeHint())
+        settings_layout.addWidget(settings_desc)
+        q_layout = QHBoxLayout()
+        q_layout.addWidget(QLabel("Q = "))
+        q_input = QSpinBox()
+        q_input.setRange(5, 60)
+        q_input.setValue(60)
+        q_layout.addWidget(q_input)
+        settings_layout.addLayout(q_layout)
+        channel_layout = QHBoxLayout()
+        channel_layout.addWidget(QLabel("Channel"))
+        channel_combo = QComboBox()
+        channel_combo.addItems(["R", "G", "B"])
+        channel_combo.setCurrentText("B")
+        channel_layout.addWidget(channel_combo)
+        settings_layout.addLayout(channel_layout)
+        settings_group.setLayout(settings_layout)
+        dialog_layout.addWidget(settings_group)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok |
+                                   QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        dialog_layout.addWidget(buttons)
+        dialog.setLayout(dialog_layout)
+        result = dialog.exec()
+        if result == QDialog.Accepted:
+            self.decode_invisible_watermark(q_input.value(),
+                                            channel_combo.currentText(),
+                                            self.main_layout.sidebar.
+                                            navigation.currentItem().
+                                            data(Qt.UserRole))
+
+    def decode_invisible_watermark(self, Q, channel, image_path):
+        invisible_watermark = Invisible3DDCTBased(Q,
+                                                  channel.lower(),
+                                                  self.invisible_saving_format,
+                                                  self.invisible_saving_quality)
+        self.main_layout.sidebar.log_text("Decoding invisible watermark "
+                                          "started.")
+        dialog = QMessageBox(QMessageBox.Information, "Watermark",
+                             "Decoding. It may take a while, please "
+                             "wait...")
+        try:
+            dialog.setStandardButtons(QMessageBox.NoButton)
+            dialog.setWindowFlags(Qt.WindowTitleHint)
+            dialog.setWindowIcon(self.icon)
+            dialog.open()
+            QApplication.processEvents()
+            invisible_watermark.decode(image_path, "extracted watermarks")
+            dialog.close()
+            self.main_layout.sidebar.log_text("Watermark successfully "
+                                              "decoded. Image has been saved "
+                                              "to [<application directory>\\"
+                                              "extracted watermarks].")
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
+        except Exception as e:
+            self.main_layout.sidebar.log_text(f"Error while decoding "
+                                              f"watermark:\n"
+                                              f"{e}.\n"
+                                              f"Watermark was NOT decoded.",
+                                              "red")
+            dialog.close()
+            self.main_layout.sidebar.tabs.setCurrentIndex(1)
+            return
