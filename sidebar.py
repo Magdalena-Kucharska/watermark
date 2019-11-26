@@ -46,13 +46,14 @@ class ImagesNav(QListWidget):
         if len(main_window.main_layout.image_editor.scene().items()) > 2:
             message_box = QMessageBox()
             message_box.setIcon(QMessageBox.Warning)
-            message_box.setText("The image has been modified. Are you sure "
-                                "you want to load different image without "
-                                "saving? All changes will be lost.")
+            message_box.setText("Obraz został zmodyfikowany. Czy chcesz "
+                                "załadować inny obraz bez zapisywania "
+                                "obecnego? Wszystkie zmiany zostaną utracone.")
             message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            message_box.button(QMessageBox.Cancel).setText("Anuluj")
             message_box.setDefaultButton(QMessageBox.Cancel)
             message_box.setWindowIcon(main_window.icon)
-            message_box.setWindowTitle("Unsaved changes")
+            message_box.setWindowTitle("Niezapisane zmiany")
             answer = message_box.exec()
             if answer == QMessageBox.Cancel:
                 return
@@ -73,7 +74,7 @@ def set_image_scale(scale, image_item, value_label):
 
 def set_item_rotation(rotation, item, value_label):
     item.setRotation(float(rotation))
-    value_label.setText(str(rotation) + " degrees")
+    value_label.setText(str(rotation) + " \N{DEGREE SIGN}")
 
 
 def set_item_opacity(opacity, item, value_label):
@@ -107,9 +108,9 @@ def set_font_weight(weight, text_item):
 
 
 def set_font_style(style, text_item):
-    font_styles = {"Normal": QFont.StyleNormal,
-                   "Italic": QFont.StyleItalic,
-                   "Oblique": QFont.StyleOblique}
+    font_styles = {"Normalny": QFont.StyleNormal,
+                   "Kursywa": QFont.StyleItalic,
+                   "Pochyły": QFont.StyleOblique}
     font = text_item.font()
     font.setStyle(font_styles[style])
     text_item.setFont(font)
@@ -123,16 +124,16 @@ def set_font_size(size, text_item):
 
 def init_stretch_layout(text_item):
     stretch_combo_box = QComboBox()
-    stretch_options = {0: "Not set",
-                       50: "UltraCondensed",
-                       62: "ExtraCondensed",
-                       75: "Condensed",
-                       87: "SemiCondensed",
-                       100: "Unstretched",
-                       112: "SemiExpanded",
-                       125: "Expanded",
-                       150: "ExtraExpanded",
-                       200: "UltraExpanded"}
+    stretch_options = {0: "Brak",
+                       50: "Ultra ściśnięty",
+                       62: "Extra ściśnięty",
+                       75: "Ściśnięty",
+                       87: "Lekko ściśnięty",
+                       100: "Nierozciągnięty",
+                       112: "Lekko rozciągnięty",
+                       125: "Rozciągnięty",
+                       150: "Extra rozciągnięty",
+                       200: "Ultra rozciągnięty"}
     for option in stretch_options.values():
         stretch_combo_box.addItem(option)
     stretch_combo_box.setCurrentText(stretch_options[text_item.font(
@@ -148,11 +149,11 @@ def init_stretch_layout(text_item):
 
 def init_capitalization_widget(text_item):
     capitalization_combo_box = QComboBox()
-    capitalization_options = ["Not set",
-                              "All uppercase",
-                              "All lowercase",
-                              "Small caps",
-                              "Capitalize"]
+    capitalization_options = ["Brak",
+                              "Wielkie litery",
+                              "Małe litery",
+                              "Kapitaliki",
+                              "Z wielkiej litery"]
     for option in capitalization_options:
         capitalization_combo_box.addItem(option)
     capitalization_combo_box.setCurrentIndex(
@@ -190,8 +191,8 @@ def init_letter_spacing_widget(text_item):
     letter_spacing_value_input = QSpinBox()
     letter_spacing_value_input.setRange(-10000, 10000)
 
-    letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
-                            QFont.AbsoluteSpacing: "Absolute spacing"}
+    letter_spacing_types = {QFont.PercentageSpacing: "Procentowe odstępy",
+                            QFont.AbsoluteSpacing: "Bezwględne odstępy"}
     for letter_spacing_type in letter_spacing_types.values():
         letter_spacing_type_combo_box.addItem(letter_spacing_type)
     current_spacing_type = text_item.font().letterSpacingType()
@@ -226,13 +227,13 @@ def init_letter_spacing_widget(text_item):
         units_label.setText("px")
     letter_spacing_value_input_layout.addWidget(units_label)
     letter_spacing_layout.addLayout(letter_spacing_value_input_layout)
-    letter_spacing_group_box = QGroupBox("Letter spacing")
+    letter_spacing_group_box = QGroupBox("Odstępy między literami")
     letter_spacing_group_box.setLayout(letter_spacing_layout)
     return letter_spacing_group_box
 
 
 def init_overline_widget(text_item):
-    overline_checkbox = QCheckBox("Overline")
+    overline_checkbox = QCheckBox("Nadkreślenie")
     overline_checkbox.setChecked(text_item.font().overline())
     overline_checkbox.stateChanged.connect(lambda x:
                                            set_font_overline(x,
@@ -241,7 +242,7 @@ def init_overline_widget(text_item):
 
 
 def init_underline_widget(text_item):
-    underline_checkbox = QCheckBox("Underline")
+    underline_checkbox = QCheckBox("Podkreślenie")
     underline_checkbox.setChecked(text_item.font().underline())
     underline_checkbox.stateChanged.connect(lambda x:
                                             set_font_underline(x,
@@ -250,7 +251,7 @@ def init_underline_widget(text_item):
 
 
 def init_strikeout_widget(text_item):
-    strikeout_checkbox = QCheckBox("Strikeout")
+    strikeout_checkbox = QCheckBox("Przekreślenie")
     strikeout_checkbox.setChecked(text_item.font().strikeOut())
     strikeout_checkbox.stateChanged.connect(lambda x:
                                             set_font_strikeout(x,
@@ -274,9 +275,9 @@ def init_font_size_layout(text_item):
 
 
 def init_font_style_widget(text_item):
-    font_styles = {QFont.StyleNormal: "Normal",
-                   QFont.StyleItalic: "Italic",
-                   QFont.StyleOblique: "Oblique"}
+    font_styles = {QFont.StyleNormal: "Normalny",
+                   QFont.StyleItalic: "Kursywa",
+                   QFont.StyleOblique: "Pochyły"}
     font_style_combo_box = QComboBox()
     for font_style in font_styles.values():
         font_style_combo_box.addItem(font_style)
@@ -291,15 +292,15 @@ def init_font_style_widget(text_item):
 
 
 def init_font_weight_widget(text_item):
-    font_weights = {0: "Thin",
-                    12: "Extra light",
-                    25: "Light",
-                    50: "Normal",
-                    57: "Medium",
-                    63: "Demi bold",
-                    75: "Bold",
-                    81: "Extra bold",
-                    87: "Black"}
+    font_weights = {0: "Cienka",
+                    12: "Extra lekka",
+                    25: "Lekka",
+                    50: "Normalna",
+                    57: "Średnia",
+                    63: "Średnio pogrubiona",
+                    75: "Pogrubiona",
+                    81: "Extra pogrubiona",
+                    87: "Najgrubsza"}
     font_weight_combo_box = QComboBox()
     for font_weight in font_weights.values():
         font_weight_combo_box.addItem(font_weight)
@@ -315,7 +316,7 @@ def init_font_weight_widget(text_item):
 
 
 def init_font_color_widget(text_item):
-    button = QPushButton("Set color")
+    button = QPushButton("Ustaw kolor")
     button.clicked.connect(lambda: set_font_color(text_item))
     return button
 
@@ -323,7 +324,7 @@ def init_font_color_widget(text_item):
 def init_item_opacity_layout(item):
     current_opacity = item.opacity()
     label_layout = QHBoxLayout()
-    label_layout.addWidget(QLabel("Opacity"))
+    label_layout.addWidget(QLabel("Krycie"))
     opacity_value_label = QLabel(str(current_opacity))
     label_layout.addWidget(opacity_value_label)
     opacity_layout = QVBoxLayout()
@@ -346,8 +347,8 @@ def init_item_opacity_layout(item):
 def init_item_rotation_layout(item):
     current_rotation = item.rotation()
     label_layout = QHBoxLayout()
-    label_layout.addWidget(QLabel("Rotation"))
-    rotation_value_label = QLabel(str(current_rotation) + " degrees")
+    label_layout.addWidget(QLabel("Obrót"))
+    rotation_value_label = QLabel(str(current_rotation) + " \N{DEGREE SIGN}")
     label_layout.addWidget(rotation_value_label)
     rotation_layout = QVBoxLayout()
     rotation_layout.addLayout(label_layout)
@@ -368,7 +369,7 @@ def init_item_rotation_layout(item):
 def init_image_scale_layout(image_item):
     current_scale = image_item.scale()
     label_layout = QHBoxLayout()
-    label_layout.addWidget(QLabel("Scale"))
+    label_layout.addWidget(QLabel("Skala"))
     scale_value_label = QLabel(str(current_scale * 100) + "%")
     label_layout.addWidget(scale_value_label)
     scale_input = QSlider()
@@ -388,7 +389,7 @@ def init_image_scale_layout(image_item):
 
 
 def init_item_delete_widget(item):
-    button = QPushButton("Delete")
+    button = QPushButton("Usuń")
     button.clicked.connect(lambda: remove_item_from_scene(item))
     return button
 
@@ -408,8 +409,8 @@ class Sidebar(QWidget):
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.navigation, "Images list")
-        self.tabs.addTab(self.log, "Application log")
+        self.tabs.addTab(self.navigation, "Lista obrazów")
+        self.tabs.addTab(self.log, "Dziennik zdarzeń")
         self.layout = QStackedLayout()
         self.layout.addWidget(self.settings_scroll_area)
         self.layout.addWidget(self.tabs)
@@ -432,30 +433,30 @@ class Sidebar(QWidget):
     def init_font_settings(self, text_item):
         font_layout = QVBoxLayout()
         font_layout.setAlignment(Qt.AlignTop)
-        font_layout.addWidget(QLabel("Family"))
+        font_layout.addWidget(QLabel("Rodzina czcionki"))
         font_layout.addWidget(init_font_families_widget(text_item))
-        font_layout.addWidget(QLabel("Size"))
+        font_layout.addWidget(QLabel("Rozmiar"))
         font_layout.addLayout(init_font_size_layout(text_item))
-        font_layout.addWidget(QLabel("Color"))
+        font_layout.addWidget(QLabel("Kolor"))
         font_layout.addWidget(init_font_color_widget(text_item))
-        font_layout.addWidget(QLabel("Style"))
+        font_layout.addWidget(QLabel("Styl"))
         font_layout.addWidget(init_font_style_widget(text_item))
-        font_layout.addWidget(QLabel("Weight"))
+        font_layout.addWidget(QLabel("Grubość czcionki"))
         font_layout.addWidget(init_font_weight_widget(text_item))
-        font_layout.addWidget(QLabel("Capitalization"))
+        font_layout.addWidget(QLabel("Kapitalizacja"))
         font_layout.addWidget(init_capitalization_widget(text_item))
-        font_layout.addWidget(QLabel("Stretch"))
+        font_layout.addWidget(QLabel("Rozciągnięcie"))
         font_layout.addWidget(init_stretch_layout(text_item))
         font_layout.addWidget(init_kerning_widget(text_item))
         font_layout.addWidget(init_overline_widget(text_item))
         font_layout.addWidget(init_strikeout_widget(text_item))
         font_layout.addWidget(init_underline_widget(text_item))
         font_layout.addWidget(init_letter_spacing_widget(text_item))
-        font_group_box = QGroupBox("Font")
+        font_group_box = QGroupBox("Czcionka")
         font_group_box.setLayout(font_layout)
         layout = QVBoxLayout()
         layout.addWidget(font_group_box)
-        text_item_group_box = QGroupBox("Text item")
+        text_item_group_box = QGroupBox("Element tekstowy")
         text_item_layout = QVBoxLayout()
         text_item_layout.setAlignment(Qt.AlignTop)
         text_item_layout.addLayout(
@@ -473,7 +474,7 @@ class Sidebar(QWidget):
     def init_image_settings(self, image_item):
         image_layout = QVBoxLayout()
         image_layout.setAlignment(Qt.AlignTop)
-        image_group_box = QGroupBox("Image")
+        image_group_box = QGroupBox("Obraz")
         image_layout.addLayout(init_item_opacity_layout(image_item))
         image_layout.addSpacing(30)
         image_layout.addLayout(init_item_rotation_layout(image_item))
@@ -505,33 +506,33 @@ class Sidebar(QWidget):
         new_item.setSelected(True)
 
     def init_item_duplicate_widget(self, item):
-        button = QPushButton("Duplicate")
+        button = QPushButton("Duplikuj")
         button.clicked.connect(lambda: self.duplicate_item(item))
         return button
 
 
 def set_text_capitalization(capitalization, text_item):
-    capitalization_options = {"Not set": QFont.MixedCase,
-                              "All uppercase": QFont.AllUppercase,
-                              "All lowercase": QFont.AllLowercase,
-                              "Small caps": QFont.SmallCaps,
-                              "Capitalize": QFont.Capitalize}
+    capitalization_options = {"Brak": QFont.MixedCase,
+                              "Wielkie litery": QFont.AllUppercase,
+                              "Małe litery": QFont.AllLowercase,
+                              "Kapitaliki": QFont.SmallCaps,
+                              "Z wielkiej litery": QFont.Capitalize}
     font = text_item.font()
     font.setCapitalization(capitalization_options[capitalization])
     text_item.setFont(font)
 
 
 def set_text_stretch(stretch, text_item):
-    stretch_options = {"Not set": QFont.AnyStretch,
-                       "UltraCondensed": QFont.UltraCondensed,
-                       "ExtraCondensed": QFont.ExtraCondensed,
-                       "Condensed": QFont.Condensed,
-                       "SemiCondensed": QFont.SemiCondensed,
-                       "Unstretched": QFont.Unstretched,
-                       "SemiExpanded": QFont.SemiExpanded,
-                       "Expanded": QFont.Expanded,
-                       "ExtraExpanded": QFont.ExtraExpanded,
-                       "UltraExpanded": QFont.UltraExpanded}
+    stretch_options = {"Brak": QFont.AnyStretch,
+                       "Ultra ściśnięty": QFont.UltraCondensed,
+                       "Extra ściśnięty": QFont.ExtraCondensed,
+                       "Ściśnięty": QFont.Condensed,
+                       "Lekko ściśnięty": QFont.SemiCondensed,
+                       "Nierozciągnięty": QFont.Unstretched,
+                       "Lekko rozciągnięty": QFont.SemiExpanded,
+                       "Rozciągnięty": QFont.Expanded,
+                       "Extra rozciągnięty": QFont.ExtraExpanded,
+                       "Ultra rozciągnięty": QFont.UltraExpanded}
     font = text_item.font()
     font.setStretch(stretch_options[stretch])
     text_item.setFont(font)
@@ -552,8 +553,8 @@ def set_text_kerning(kerning, text_item):
 def set_letter_spacing_value(text_item,
                              letter_spacing_type_combo_box,
                              letter_spacing_value_input):
-    letter_spacing_types = {"Percentage spacing": QFont.PercentageSpacing,
-                            "Absolute spacing": QFont.AbsoluteSpacing}
+    letter_spacing_types = {"Procentowe odstępy": QFont.PercentageSpacing,
+                            "Bezwzględne odstępy": QFont.AbsoluteSpacing}
     font = text_item.font()
     letter_spacing_type = letter_spacing_type_combo_box.currentText()
     letter_spacing_value = letter_spacing_value_input.value()
@@ -566,9 +567,9 @@ def set_letter_spacing_type(text_item, letter_spacing_type,
                             letter_spacing_value_input=None,
                             units_label=None):
     font = text_item.font()
-    letter_spacing_types = {"Percentage spacing": QFont.PercentageSpacing,
-                            "Absolute spacing": QFont.AbsoluteSpacing}
-    if letter_spacing_type == "Percentage spacing":
+    letter_spacing_types = {"Procentowe odstępy": QFont.PercentageSpacing,
+                            "Bezwzględne odstępy": QFont.AbsoluteSpacing}
+    if letter_spacing_type == "Procentowe odstępy":
         spacing = 100
     else:
         spacing = 0
@@ -576,7 +577,7 @@ def set_letter_spacing_type(text_item, letter_spacing_type,
                           spacing)
     text_item.setFont(font)
     if units_label:
-        if letter_spacing_type == "Percentage spacing":
+        if letter_spacing_type == "Procentowe odstępy":
             units_label.setText("%")
         else:
             units_label.setText("px")
