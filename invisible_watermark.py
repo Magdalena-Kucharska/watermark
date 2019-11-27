@@ -1,5 +1,5 @@
 import os
-from math import floor, sqrt
+from math import floor, sqrt, log
 
 import cv2
 import numpy as np
@@ -7,6 +7,15 @@ import skimage
 from PIL import Image
 
 import main_window
+
+
+def calculate_mse(M, N, cover_image_arr, watermarked_image_arr):
+    square_diff = np.sum((cover_image_arr - watermarked_image_arr) ** 2)
+    return 1 / (M * N) * square_diff
+
+
+def calculate_psnr(mse):
+    return 10 * log((255 ** 2) / mse, 10)
 
 
 class Invisible3DDCTBased:
@@ -19,7 +28,9 @@ class Invisible3DDCTBased:
         self.quality = quality
 
     def encode(self, cover_image_path, watermark_path, output_path):
-        image = np.array(Image.open(cover_image_path).convert("RGB"))
+        image = Image.open(cover_image_path).convert("RGB")
+        M, N = image.size
+        image = np.array(image)
         rows, cols = image.shape[0], image.shape[1]
         while rows % 8 != 0:
             rows += 1
@@ -69,6 +80,7 @@ class Invisible3DDCTBased:
         image_blocks = image_blocks.transpose((0, 3, 2, 1, 4, 5))
         image_blocks = image_blocks.reshape((rows, cols, 3))
         watermarked_image = image_blocks[:image.shape[0], :image.shape[1]]
+        watermarked_image = np.uint8(watermarked_image)
 
         save_file_name = os.path.basename(cover_image_path)
         save_file_name_split = save_file_name.split('.')
@@ -78,10 +90,12 @@ class Invisible3DDCTBased:
                                                             output_path)
         save_path = os.path.join(output_path, unique_name)
         if self.output_format in [".jpg", ".jpeg"]:
-            Image.fromarray(np.uint8(watermarked_image)).save(save_path,
-                                                              quality=self.quality)
+            Image.fromarray(watermarked_image).save(save_path,
+                                                    quality=self.quality)
         else:
-            Image.fromarray(np.uint8(watermarked_image)).save(save_path)
+            Image.fromarray(watermarked_image).save(save_path)
+
+        return calculate_mse(M, N, image, watermarked_image)
 
     def decode(self, watermarked_image_path, output_path):
         watermarked_image = np.array(Image.open(watermarked_image_path))
