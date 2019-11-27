@@ -84,7 +84,10 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
         self.mousePressEvent(click)
 
     def keyPressEvent(self, event):
-        move_item_with_arrows(self, event)
+        if self.textInteractionFlags() != Qt.TextEditorInteraction:
+            move_item_with_arrows(self, event)
+        else:
+            QGraphicsTextItem.keyPressEvent(self, event)
 
     def get_config(self):
         letter_spacing_types = {QFont.PercentageSpacing: "Procentowe odstępy",
