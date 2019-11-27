@@ -93,15 +93,15 @@ def set_font_color(text_item):
 
 
 def set_font_weight(weight, text_item):
-    font_weights = {"Thin": 0,
-                    "Extra light": 12,
-                    "Light": 25,
-                    "Normal": 50,
-                    "Medium": 57,
-                    "Demi bold": 63,
-                    "Bold": 75,
-                    "Extra bold": 81,
-                    "Black": 87}
+    font_weights = {"Cienka": 0,
+                    "Extra lekka": 12,
+                    "Lekka": 25,
+                    "Normalna": 50,
+                    "Średnia": 57,
+                    "Lekko pogrubiona": 63,
+                    "Pogrubiona": 75,
+                    "Extra pogrubiona": 81,
+                    "Najgrubsza": 87}
     font = text_item.font()
     font.setWeight(font_weights[weight])
     text_item.setFont(font)
