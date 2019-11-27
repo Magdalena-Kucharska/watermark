@@ -96,7 +96,7 @@ class Menus:
         self.menu_visible.setEnabled(False)
 
         self.menu_invisible = QMenu("Niewidoczne")
-        self.action_encode = QAction("Zakoduj niewidoczny znak wodny..",
+        self.action_encode = QAction("Zakoduj niewidoczny znak wodny...",
                                      self.menu_invisible)
         self.action_decode = QAction("Dekoduj niewidoczny znak wodny "
                                      "z zaznaczonego obrazu...",
@@ -440,6 +440,7 @@ class MainWindow(QMainWindow):
                                             QMessageBox.Ok |
                                             QMessageBox.Cancel)
                         error.setWindowIcon(self.icon)
+                        error.setButtonText(QMessageBox.Cancel, "Anuluj")
                         result = error.exec()
                         if result == QMessageBox.Ok:
                             os.remove(os.path.join("presets",
@@ -515,6 +516,7 @@ class MainWindow(QMainWindow):
             layout.addWidget(group_box)
         button_box = QDialogButtonBox(QDialogButtonBox.Ok |
                                       QDialogButtonBox.Cancel)
+        button_box.button(QDialogButtonBox.Cancel).setText("Anuluj")
         button_box.accepted.connect(dialog.accept)
         button_box.rejected.connect(dialog.reject)
         if len(presets) == 0:
@@ -759,6 +761,7 @@ class MainWindow(QMainWindow):
         dialog_layout.addWidget(invisible_group)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok |
                                    QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         dialog_layout.addWidget(buttons)
@@ -797,7 +800,7 @@ class MainWindow(QMainWindow):
         dialog_layout = QVBoxLayout()
         process_desc = QLabel("Znakowany obraz będzie przekonwertowany do "
                               "przestrzeni barw RGB i utraci ewentualną "
-                              "przeźroczystość.")
+                              "przezroczystość.")
         process_desc.setWordWrap(True)
         process_desc.setMinimumSize(process_desc.sizeHint())
         dialog_layout.addWidget(process_desc)
@@ -887,6 +890,7 @@ class MainWindow(QMainWindow):
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setEnabled(False)
+        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         output_dir_text.textChanged.connect(lambda text: buttons.button(
             QDialogButtonBox.Ok).setEnabled(bool(len(text)) and bool(len(
             watermark_dir_text.text()))))
@@ -915,7 +919,7 @@ class MainWindow(QMainWindow):
                                                   self.invisible_saving_quality)
         self.main_layout.sidebar.log_text("Rozpoczęcie kodowania "
                                           "niewidocznego znaku wodnego.")
-        if mode == "Zakoduj znak wodny z zaznaczonym obrazie":
+        if mode == "Zakoduj znak wodny w zaznaczonym obrazie":
             image_path = self.main_layout.sidebar. \
                 navigation.currentItem().data(Qt.UserRole)
             dialog = QMessageBox(QMessageBox.Information, "Watermark",
@@ -927,8 +931,9 @@ class MainWindow(QMainWindow):
                 dialog.setWindowIcon(self.icon)
                 dialog.open()
                 QApplication.processEvents()
-                invisible_watermark.encode(image_path, watermark_path,
-                                           output_dir)
+                psnr = invisible_watermark.encode(image_path,
+                                                  watermark_path, output_dir)
+                print(psnr)
                 dialog.close()
                 self.main_layout.sidebar.log_text(f"Pomyślnie zakodowano "
                                                   f"niewidoczny znak wodny. "
@@ -965,8 +970,9 @@ class MainWindow(QMainWindow):
                                                           "wodnego.")
                         self.main_layout.sidebar.tabs.setCurrentIndex(1)
                         return
-                    invisible_watermark.encode(image, watermark_path,
-                                               output_dir)
+                    psnr = invisible_watermark.encode(image, watermark_path,
+                                                      output_dir)
+                    print(psnr)
                     image_name = os.path.basename(image)
                     self.main_layout.sidebar.log_text(f"{image_name}\n"
                                                       f"Pomyślnie oznakowano.")
@@ -1017,6 +1023,7 @@ class MainWindow(QMainWindow):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok |
                                    QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         dialog_layout.addWidget(buttons)
