@@ -433,7 +433,7 @@ class Sidebar(QWidget):
     def init_font_settings(self, text_item):
         font_layout = QVBoxLayout()
         font_layout.setAlignment(Qt.AlignTop)
-        font_layout.addWidget(QLabel("Rodzina czcionki"))
+        font_layout.addWidget(QLabel("Krój"))
         font_layout.addWidget(init_font_families_widget(text_item))
         font_layout.addWidget(QLabel("Rozmiar"))
         font_layout.addLayout(init_font_size_layout(text_item))
