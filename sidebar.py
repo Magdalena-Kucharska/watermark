@@ -192,7 +192,7 @@ def init_letter_spacing_widget(text_item):
     letter_spacing_value_input.setRange(-10000, 10000)
 
     letter_spacing_types = {QFont.PercentageSpacing: "Procentowe odstępy",
-                            QFont.AbsoluteSpacing: "Bezwględne odstępy"}
+                            QFont.AbsoluteSpacing: "Bezwzględne odstępy"}
     for letter_spacing_type in letter_spacing_types.values():
         letter_spacing_type_combo_box.addItem(letter_spacing_type)
     current_spacing_type = text_item.font().letterSpacingType()
