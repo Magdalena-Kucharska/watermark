@@ -95,7 +95,7 @@ class Invisible3DDCTBased:
         else:
             Image.fromarray(watermarked_image).save(save_path)
 
-        return calculate_mse(M, N, image, watermarked_image)
+        return calculate_psnr(calculate_mse(M, N, image, watermarked_image))
 
     def decode(self, watermarked_image_path, output_path):
         watermarked_image = np.array(Image.open(watermarked_image_path))
