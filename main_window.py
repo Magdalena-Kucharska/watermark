@@ -141,10 +141,8 @@ class Menus:
 
         self.menu_about = QMenu("O programie")
         self.action_about = QAction("O aplikacji Watermark", self.menu_about)
-        self.action_help = QAction("Pomoc", self.menu_about)
-        self.action_help.setShortcut(QKeySequence.HelpContents)
+        self.action_about.setShortcut(QKeySequence.HelpContents)
         self.menu_about.addAction(self.action_about)
-        self.menu_about.addAction(self.action_help)
 
 
 def is_preset_name_valid(name):
@@ -272,6 +270,7 @@ class MainWindow(QMainWindow):
         self.menus.action_load_preset.triggered.connect(lambda:
                                                         self.get_preset_name(
                                                             load_for_user=True))
+        self.menus.action_about.triggered.connect(self.display_about)
         self.menuBar().addMenu(self.menus.menu_watermark)
         self.menuBar().addMenu(self.menus.menu_settings)
         self.menuBar().addMenu(self.menus.menu_about)
@@ -626,6 +625,7 @@ class MainWindow(QMainWindow):
             result = 0
             for i, image in enumerate(
                     self.main_layout.sidebar.navigation.loaded_images):
+                QApplication.processEvents()
                 progress.setValue(i)
                 if result or progress.wasCanceled():
                     break
@@ -933,7 +933,6 @@ class MainWindow(QMainWindow):
                 QApplication.processEvents()
                 psnr = invisible_watermark.encode(image_path,
                                                   watermark_path, output_dir)
-                print(psnr)
                 dialog.close()
                 self.main_layout.sidebar.log_text(f"Pomyślnie zakodowano "
                                                   f"niewidoczny znak wodny. "
@@ -961,8 +960,10 @@ class MainWindow(QMainWindow):
                 progress.setWindowModality(Qt.WindowModal)
                 progress.setWindowTitle("Watermark")
                 progress.setWindowIcon(self.icon)
+                progress.forceShow()
                 for i, image in enumerate(self.main_layout.sidebar.
                                                   navigation.loaded_images):
+                    QApplication.processEvents()
                     progress.setValue(i)
                     if progress.wasCanceled():
                         self.main_layout.sidebar.log_text("Anulowano "
@@ -972,7 +973,6 @@ class MainWindow(QMainWindow):
                         return
                     psnr = invisible_watermark.encode(image, watermark_path,
                                                       output_dir)
-                    print(psnr)
                     image_name = os.path.basename(image)
                     self.main_layout.sidebar.log_text(f"{image_name}\n"
                                                       f"Pomyślnie oznakowano.")
@@ -1070,3 +1070,33 @@ class MainWindow(QMainWindow):
             dialog.close()
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
             return
+
+    def display_about(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("O aplikacji Watermark")
+        dialog.setWindowIcon(self.icon)
+        dialog.setModal(True)
+        dialog_layout = QVBoxLayout()
+        dialog_layout.addWidget(QLabel("Aplikacja Watermark v1.0"))
+        dialog_layout.addWidget(QLabel("Autor: Magdalena Kucharska, "
+                                       "209942@student.pwr.edu.pl"))
+        dialog_layout.addWidget(QLabel("Aplikacja Watermark umożliwia "
+                                       "podpisywanie plików graficznych "
+                                       "widocznymi i niewidocznymi znakami "
+                                       "wodnymi."))
+        dialog_layout.addWidget(QLabel("Implementacja w języku Python 3.7. "
+                                       "Lista wymaganych bibliotek znajduje "
+                                       "się w pliku requirements.txt."))
+        link = QLabel("Logo aplikacji wykonane na podstawie darmowej ikony "
+                      "stworzonej przez "
+                      "<a href=\"https://www.flaticon.com/authors/good-ware\">"
+                      "Good Ware</a>.")
+        link.setTextFormat(Qt.RichText)
+        link.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        link.setOpenExternalLinks(True)
+        dialog_layout.addWidget(link)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+        buttons.accepted.connect(dialog.accept)
+        dialog_layout.addWidget(buttons)
+        dialog.setLayout(dialog_layout)
+        dialog.exec()
