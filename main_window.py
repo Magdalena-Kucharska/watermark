@@ -63,68 +63,69 @@ class MainLayout(QHBoxLayout):
 class Menus:
 
     def __init__(self):
-        self.menu_file = QMenu("Plik")
-        self.action_open = QAction("Otwórz...", self.menu_file)
+        self.menu_file = QMenu("File")
+        self.action_open = QAction("Open...", self.menu_file)
         self.action_open.setShortcut(QKeySequence.Open)
         self.menu_file.addAction(self.action_open)
-        self.action_open_add = QAction("Dodaj do listy...", self.menu_file)
+        self.action_open_add = QAction("Add to list...", self.menu_file)
         self.action_open_add.setShortcut(QKeySequence(Qt.CTRL + Qt.SHIFT +
                                                       Qt.Key_O))
         self.action_open_add.setEnabled(False)
         self.menu_file.addAction(self.action_open_add)
-        self.action_save_as = QAction("Zapisz jako...", self.menu_file)
+        self.action_save_as = QAction("Save as...", self.menu_file)
         self.action_save_as.setShortcut(QKeySequence.Save)
         self.action_save_as.setEnabled(False)
         self.menu_file.addAction(self.action_save_as)
-        self.action_close = QAction("Zamknij", self.menu_file)
+        self.action_close = QAction("Close", self.menu_file)
         self.action_close.setShortcut(QKeySequence.Close)
         self.action_close.setEnabled(False)
         self.menu_file.addAction(self.action_close)
-        self.action_quit = QAction("Zakończ Watermark", self.menu_file)
+        self.action_quit = QAction("Quit Watermark", self.menu_file)
         self.action_quit.setShortcut(QKeySequence.Quit)
         self.menu_file.addAction(self.action_quit)
 
-        self.menu_watermark = QMenu("Znaki wodne")
+        self.menu_watermark = QMenu("Watermarking")
 
-        self.menu_visible = QMenu("Widoczne")
+        self.menu_visible = QMenu("Visible")
 
-        self.action_add_text = QAction("Dodaj tekst", self.menu_visible)
+        self.action_add_text = QAction("Add text", self.menu_visible)
         self.menu_visible.addAction(self.action_add_text)
-        self.action_add_image = QAction("Dodaj obraz...", self.menu_visible)
+        self.action_add_image = QAction("Add image...", self.menu_visible)
         self.menu_visible.addAction(self.action_add_image)
 
         self.menu_visible.setEnabled(False)
 
-        self.menu_invisible = QMenu("Niewidoczne")
-        self.action_encode = QAction("Zakoduj niewidoczny znak wodny...",
+        self.menu_invisible = QMenu("Invisible")
+        self.action_encode = QAction("Encode invisible watermark...",
                                      self.menu_invisible)
-        self.action_decode = QAction("Dekoduj niewidoczny znak wodny "
-                                     "z zaznaczonego obrazu...",
+        self.action_decode = QAction("Decode invisible watermark from the "
+                                     "selected picture...",
                                      self.menu_invisible)
         self.menu_invisible.addAction(self.action_encode)
         self.menu_invisible.addAction(self.action_decode)
         self.menu_invisible.setEnabled(False)
 
-        self.menu_presets = QMenu("Zapisane znaki wodne")
+        self.menu_presets = QMenu("Saved presets")
 
-        self.action_save_preset = QAction("Zapisz znak wodny do pliku... ",
+        self.action_save_preset = QAction("Save current watermark as "
+                                          "preset... ",
                                           self.menu_presets)
         self.action_save_preset.setEnabled(False)
         self.menu_presets.addAction(self.action_save_preset)
-        self.action_manage_presets = QAction("Otwórz folder z zapisanymi "
-                                             "znakami",
+        self.action_manage_presets = QAction("Open saved presets directory",
                                              self.menu_presets)
         self.menu_presets.addAction(self.action_manage_presets)
 
-        self.action_apply_preset = QAction("Zastosuj zapisany znak wodny...",
+        self.action_apply_preset = QAction("Apply saved preset...",
                                            self.menu_presets)
         self.menu_presets.addAction(self.action_apply_preset)
         self.action_apply_preset.setEnabled(False)
 
-        self.action_load_preset = QAction("Załaduj zapisany znak wodny...",
+        self.action_load_preset = QAction("Load saved preset in edit mode...",
                                           self.menu_presets)
-        self.action_load_preset.setToolTip("Ta opcja załaduje zapisany znak "
-                                           "wodny do edycji.")
+        self.action_load_preset.setToolTip("This option will load saved "
+                                           "preset without automatically "
+                                           "applying it.")
         self.action_load_preset.setEnabled(False)
         self.menu_presets.setToolTipsVisible(True)
         self.menu_presets.addAction(self.action_load_preset)
@@ -133,14 +134,13 @@ class Menus:
         self.menu_watermark.addMenu(self.menu_invisible)
         self.menu_watermark.addMenu(self.menu_presets)
 
-        self.menu_settings = QMenu("Ustawienia")
-        self.action_set_quality = QAction("Dostosuj jakość zapisywanych "
-                                          "obrazów",
+        self.menu_settings = QMenu("Settings")
+        self.action_set_quality = QAction("Adjust quality of output images",
                                           self.menu_settings)
         self.menu_settings.addAction(self.action_set_quality)
 
-        self.menu_about = QMenu("O programie")
-        self.action_about = QAction("O aplikacji Watermark", self.menu_about)
+        self.menu_about = QMenu("About")
+        self.action_about = QAction("About Watermark", self.menu_about)
         self.action_about.setShortcut(QKeySequence.HelpContents)
         self.menu_about.addAction(self.action_about)
 
