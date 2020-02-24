@@ -90,16 +90,16 @@ class CustomQGraphicsTextItem(QGraphicsTextItem):
             QGraphicsTextItem.keyPressEvent(self, event)
 
     def get_config(self):
-        letter_spacing_types = {QFont.PercentageSpacing: "Procentowe odstępy",
-                                QFont.AbsoluteSpacing: "Bezwzględne odstępy"}
-        capitalization_options = {QFont.MixedCase: "Brak",
-                                  QFont.AllUppercase: "Wielkie litery",
-                                  QFont.AllLowercase: "Małe litery",
-                                  QFont.SmallCaps: "Kapitaliki",
-                                  QFont.Capitalize: "Z wielkiej litery"}
-        font_styles = {QFont.StyleNormal: "Normalny",
-                       QFont.StyleItalic: "Kursywa",
-                       QFont.StyleOblique: "Pochyły"}
+        letter_spacing_types = {QFont.PercentageSpacing: "Percentage spacing",
+                                QFont.AbsoluteSpacing: "Absolute spacing"}
+        capitalization_options = {QFont.MixedCase: "None",
+                                  QFont.AllUppercase: "All uppercase",
+                                  QFont.AllLowercase: "All lowercase",
+                                  QFont.SmallCaps: "Small caps",
+                                  QFont.Capitalize: "Capitalize"}
+        font_styles = {QFont.StyleNormal: "Normal",
+                       QFont.StyleItalic: "Italic",
+                       QFont.StyleOblique: "Oblique"}
         font = self.font()
         background_size = self.scene().sceneRect()
         scene_pos = self.scenePos()
