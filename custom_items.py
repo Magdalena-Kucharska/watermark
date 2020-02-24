@@ -8,13 +8,13 @@ import sidebar
 
 def move_item_with_arrows(item, key_press_event):
     if key_press_event.key() == Qt.Key_Down:
-        item.moveBy(0.0, 0.1)
+        item.moveBy(0, 1)
     elif key_press_event.key() == Qt.Key_Up:
-        item.moveBy(0.0, -0.1)
+        item.moveBy(0, -1)
     elif key_press_event.key() == Qt.Key_Left:
-        item.moveBy(-0.1, 0.0)
+        item.moveBy(-1, 0)
     elif key_press_event.key() == Qt.Key_Right:
-        item.moveBy(0.1, 0.0)
+        item.moveBy(1, 0)
 
 
 def load_item_position_from_config(item, config):
