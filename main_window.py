@@ -225,15 +225,14 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Watermark")
         self.item_pos = QLabel()
-        self.item_pos.setToolTip("Możesz ustawić pozycję elementu z większą "
-                                 "dokładnością używając klawiszy strzałek "
-                                 "na klawiaturze.")
+        self.item_pos.setToolTip("You can move items with bigger accuracy by "
+                                 "using arrow keys.")
         self.current_image_name = QLabel()
         self.init_status_bar()
         self.init_menu()
         self.init_size()
         self.setWindowIcon(self.icon)
-        self.main_layout.sidebar.log_text("Gotowy.")
+        self.main_layout.sidebar.log_text("Ready.")
         if not os.path.exists("presets"):
             os.mkdir("presets")
         if not os.path.exists("extracted watermarks"):
@@ -326,7 +325,7 @@ class MainWindow(QMainWindow):
 
     def open_file(self, add=False):
         self.main_layout.image_editor.scene().clearSelection()
-        self.main_layout.sidebar.log_text("Otwórz plik(i)...")
+        self.main_layout.sidebar.log_text("Open file(s)...")
         loaded_images = QFileDialog.getOpenFileNames(
             filter="Image files (*.bmp *.BMP *.gif "
                    "*.GIF *.jpeg *.JPEG *.jpg *.JPG "
@@ -352,8 +351,7 @@ class MainWindow(QMainWindow):
                 lambda current, previous:
                 self.main_layout.load_image(current.data(Qt.UserRole)))
             self.main_layout.sidebar.navigation.setCurrentRow(0)
-            self.main_layout.sidebar.log_text(f"Załadowano {files_count} plik("
-                                              f"ów).")
+            self.main_layout.sidebar.log_text(f"Loaded {files_count} file(s).")
             self.menus.menu_visible.setEnabled(True)
             self.menus.menu_invisible.setEnabled(True)
             self.menus.action_apply_preset.setEnabled(True)
@@ -363,7 +361,7 @@ class MainWindow(QMainWindow):
             self.menus.action_close.setEnabled(True)
             self.menus.action_load_preset.setEnabled(True)
         else:
-            self.main_layout.sidebar.log_text("Anulowano otwieranie plików.")
+            self.main_layout.sidebar.log_text("Canceled loading files.")
 
     def add_text(self):
         text_item = CustomQGraphicsTextItem("Watermark")
@@ -373,7 +371,7 @@ class MainWindow(QMainWindow):
         text_item.setSelected(True)
 
     def add_image(self):
-        image = QFileDialog.getOpenFileName(caption="Otwórz...",
+        image = QFileDialog.getOpenFileName(caption="Open...",
                                             filter="Image files (*.bmp *.BMP "
                                                    "*.gif *.GIF *.jpeg *.JPEG "
                                                    "*.jpg *.JPG *.png *.PNG "
@@ -391,7 +389,7 @@ class MainWindow(QMainWindow):
     def get_save_file_name(self):
         (file_name, file_format) = \
             QFileDialog.getSaveFileName(self,
-                                        "Zapisz obraz jako...",
+                                        "Save file as...",
                                         filter="Windows Bitmap (*.bmp);;"
                                                "Joint Photographic Experts "
                                                "Group (*.jpg *jpeg);;"
@@ -405,17 +403,17 @@ class MainWindow(QMainWindow):
                                file_name, file_format,
                                self.visible_saving_quality)
             if not result:
-                self.main_layout.sidebar.log_text(f"Plik [{file_name}] "
-                                                  f"pomyślnie zapisany.")
+                self.main_layout.sidebar.log_text(f"File [{file_name}] "
+                                                  f"successfully saved.")
             else:
-                self.main_layout.sidebar.log_text(f"Błąd podczas zapisywania "
-                                                  f"pliku [{file_name}]. "
-                                                  f"Plik NIE został "
-                                                  f"zapisany.", "red")
+                self.main_layout.sidebar.log_text(f"Error while saving the "
+                                                  f"file [{file_name}]. "
+                                                  f"The file has NOT been "
+                                                  f"saved.", "red")
         else:
-            self.main_layout.sidebar.log_text(f"Błąd podczas zapisywania "
-                                              f"pliku [{file_name}]. Plik "
-                                              f"NIE został zapisany.", "red")
+            self.main_layout.sidebar.log_text(f"Error while saving the "
+                                              f"file [{file_name}]. The file "
+                                              f"has NOT been saved.", "red")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def save_preset(self):
@@ -425,21 +423,20 @@ class MainWindow(QMainWindow):
         ok = False
         preset_name = ""
         while not is_name_valid:
-            (preset_name, ok) = dialog.getText(self, "Zapisz znak wodny "
-                                                     "jako...", "Nazwa pliku:")
+            (preset_name, ok) = dialog.getText(self, "Save preset "
+                                                     "as...", "File name:")
             if ok:
                 if len(preset_name) > 0:
                     is_name_valid = is_preset_name_valid(preset_name)
                     if not is_name_valid:
                         error = QMessageBox(QMessageBox.Warning,
-                                            "Nieprawidłowa nazwa",
-                                            "Znak wodny o tej nazwie już "
-                                            "istnieje. Czy chcesz go "
-                                            "nadpisać?",
+                                            "Incorrect file name",
+                                            "Preset with this name already "
+                                            "exists. Would you like to "
+                                            "overwrite it?",
                                             QMessageBox.Ok |
                                             QMessageBox.Cancel)
                         error.setWindowIcon(self.icon)
-                        error.setButtonText(QMessageBox.Cancel, "Anuluj")
                         result = error.exec()
                         if result == QMessageBox.Ok:
                             os.remove(os.path.join("presets",
@@ -447,8 +444,8 @@ class MainWindow(QMainWindow):
                             is_name_valid = True
                 else:
                     error = QMessageBox(QMessageBox.Critical,
-                                        "Nieprawidłowa nazwa",
-                                        "Nazwa pliku nie może być pusta.",
+                                        "Incorrect file name",
+                                        "File name can't be empty.",
                                         QMessageBox.Ok)
                     error.setWindowIcon(self.icon)
                     error.exec_()
@@ -467,15 +464,15 @@ class MainWindow(QMainWindow):
                 preset_file = open(preset_dir, "w")
                 yaml.dump_all(items_list, preset_file, sort_keys=False)
                 preset_file.close()
-                self.main_layout.sidebar.log_text(f"Pomyślnie zapisano znak "
-                                                  f"wodny do pliku ["
+                self.main_layout.sidebar.log_text(f"Preset successfully saved "
+                                                  f"to file ["
                                                   f"{preset_name}.yaml].")
             except:
-                self.main_layout.sidebar.log_text(f"Błąd podczas zapisywania "
-                                                  f"znaku wodnego do pliku ["
+                self.main_layout.sidebar.log_text(f"Error while saving the "
+                                                  f"preset to file ["
                                                   f"{preset_name}.yaml]. "
-                                                  f"Znak wodny NIE został "
-                                                  f"zapisany.", "red")
+                                                  f"The preset has NOT been "
+                                                  f"saved.", "red")
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def get_preset_name(self, load_for_user=False):
@@ -485,7 +482,7 @@ class MainWindow(QMainWindow):
                     r"[\s\S]+.yaml", file):
                 presets.append(file)
         dialog = QDialog()
-        dialog.setWindowTitle("Zastosuj znak wodny")
+        dialog.setWindowTitle("Apply preset")
         dialog.setModal(True)
         dialog.setWindowIcon(self.icon)
         layout = QVBoxLayout()
@@ -495,14 +492,14 @@ class MainWindow(QMainWindow):
         if not load_for_user:
             choice_combo_box = QComboBox()
             choice_combo_box.addItems(
-                ["do zaznaczonego obrazu", "do wszystkich obrazów"])
+                ["to the current image", "to all loaded images"])
             layout.addWidget(choice_combo_box)
-            group_box = QGroupBox("Lokalizacja plików wyjściowych")
+            group_box = QGroupBox("Ouptut directory")
             group_box_layout = QVBoxLayout()
             path_display = QLineEdit()
             path_display.setText(os.path.dirname(os.path.realpath(__file__)))
             group_box_layout.addWidget(path_display)
-            path_button = QPushButton("Ustaw lokalizację")
+            path_button = QPushButton("Set directory")
             path_input = QFileDialog()
             path_input.setFileMode(QFileDialog.Directory)
             path_input.setOption(QFileDialog.ShowDirsOnly, True)
@@ -515,7 +512,6 @@ class MainWindow(QMainWindow):
             layout.addWidget(group_box)
         button_box = QDialogButtonBox(QDialogButtonBox.Ok |
                                       QDialogButtonBox.Cancel)
-        button_box.button(QDialogButtonBox.Cancel).setText("Anuluj")
         button_box.accepted.connect(dialog.accept)
         button_box.rejected.connect(dialog.reject)
         if len(presets) == 0:
@@ -551,22 +547,21 @@ class MainWindow(QMainWindow):
                     new_item.path = item["image_path"]
                 else:
                     self.main_layout. \
-                        sidebar.log_text(f"Błąd podczas odczytu konfiguracji "
-                                         f"znaku wodnego z pliku. Obraz "
-                                         f"[{item['image_path']}] "
-                                         f"nie istnieje. "
-                                         f"Przerywam...", "red")
+                        sidebar.log_text(f"Error while loading preset from "
+                                         f"the file. Image "
+                                         f"[{item['image_path']}] couldn't "
+                                         f"be found. "
+                                         f"Aborting...", "red")
                     return 1
             if new_item:
                 scene.addItem(new_item)
             try:
                 new_item.load_config(item)
             except Exception as e:
-                self.main_layout.sidebar.log_text(f"Błąd podczas wczytywania "
-                                                  f"konfiguracji znaku "
-                                                  f"wodnego z pliku.\n"
-                                                  f"(Wyjątek: {e}).\n"
-                                                  f"Przerywam...", "red")
+                self.main_layout.sidebar.log_text(f"Error while loading "
+                                                  f"preset from the file.\n"
+                                                  f"(Exception: {e}).\n"
+                                                  f"Aborting...", "red")
                 return 1
         if not for_user:
             image_name = os.path.basename(image_path)
@@ -577,10 +572,10 @@ class MainWindow(QMainWindow):
                 unique_name = generate_unique_file_name(image_name,
                                                         output_path)
             except:
-                self.main_layout.sidebar.log_text(f"Ścieżka dostępu ["
-                                                  f"{output_path}] jest "
-                                                  f"nieprawidłowa. "
-                                                  f"Przerywam...", "red")
+                self.main_layout.sidebar.log_text(f"The output path ["
+                                                  f"{output_path}] is "
+                                                  f"incorrect. "
+                                                  f"Aborting...", "red")
                 return 1
             save_path = os.path.join(output_path, unique_name)
             result = save_file(scene=scene,
@@ -588,21 +583,21 @@ class MainWindow(QMainWindow):
                                quality=self.visible_saving_quality)
             if result:
                 self.main_layout.sidebar.log_text(f"{image_name}\n"
-                                                  f"Błąd podczas zapisu do "
-                                                  f"podanej "
-                                                  f"lokalizacji: "
+                                                  f"Error while saving to "
+                                                  f"the directory: "
                                                   f"[{save_path}]. "
-                                                  f"Plik "
-                                                  f"[{unique_name}] NIE "
-                                                  f"został zapisany. "
-                                                  f"Przerywam...",
+                                                  f"The file "
+                                                  f"[{unique_name}] has NOT "
+                                                  f"been saved. "
+                                                  f"Aborting...",
                                                   "red")
                 return 1
             else:
                 self.main_layout.sidebar.log_text(f"{image_name}\n"
-                                                  f"Plik "
-                                                  f"[{unique_name}] zapisany "
-                                                  f"do"
+                                                  f"The file "
+                                                  f"[{unique_name}] "
+                                                  f"successfully "
+                                                  f"saved to"
                                                   f" [{output_path}].")
                 return 0
         return 0
@@ -610,13 +605,13 @@ class MainWindow(QMainWindow):
     def apply_preset(self, preset_name, mode, output_path):
         if not os.path.exists(output_path):
             os.makedirs(output_path, exist_ok=True)
-        self.main_layout.sidebar.log_text(f"Stosowanie konfiguracji znaku"
-                                          f"wodnego [{preset_name}]...")
+        self.main_layout.sidebar.log_text(f"Applying the preset "
+                                          f"[{preset_name}]...")
         items = read_preset(preset_name)
-        if mode == "do wszystkich obrazów":
-            progress = QProgressDialog(f"Stosowanie konfiguracji "
+        if mode == "to all loaded images":
+            progress = QProgressDialog(f"Applying the preset "
                                        f"[{preset_name}]...",
-                                       "Anuluj", 0,
+                                       "Abort", 0,
                                        len(self.main_layout.sidebar.
                                            navigation.loaded_images), self)
             progress.setWindowModality(Qt.WindowModal)
@@ -634,7 +629,7 @@ class MainWindow(QMainWindow):
                 len(self.main_layout.sidebar.navigation.loaded_images))
         else:
             dialog = QMessageBox(QMessageBox.Information, "Watermark",
-                                 f"Stosowanie konfiguracji [{preset_name}]...")
+                                 f"Applying the preset [{preset_name}]...")
             dialog.setStandardButtons(QMessageBox.NoButton)
             dialog.setWindowFlags(Qt.WindowTitleHint)
             dialog.setWindowIcon(self.icon)
@@ -645,26 +640,22 @@ class MainWindow(QMainWindow):
                                        currentItem().data(Qt.UserRole),
                                        output_path)
             dialog.close()
-        self.main_layout.sidebar.log_text(f"Zastosowano konfigurację ["
-                                          f"{preset_name}].")
+        self.main_layout.sidebar.log_text(f"The preset [{preset_name}] "
+                                          f"successfully applied.")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def get_quality_setting(self):
         dialog = QDialog(self)
         dialog.setModal(True)
         dialog.setWindowIcon(self.icon)
-        dialog.setWindowTitle("Dostosuj jakość zapisywanych obrazów")
+        dialog.setWindowTitle("Adjust quality of output images")
         dialog_layout = QVBoxLayout()
-        visible_group = QGroupBox("Widoczne znaki wodne")
+        visible_group = QGroupBox("Visible watermarking")
         visible_layout = QVBoxLayout()
-        visible_quality_group = QGroupBox("Jakość", visible_group)
-        visible_quality_desc = QLabel("Ustaw 0 aby uzyskać skompresowane "
-                                      "pliki o niższej jakości i mniejszym "
-                                      "rozmiarze, 100 dla nieskompresowanych "
-                                      "plików o wysokiej jakości i dużym "
-                                      "rozmiarze. "
-                                      "Przywróć ustawienie do -1 dla "
-                                      "domyślnego zachowania.")
+        visible_quality_group = QGroupBox("Quality", visible_group)
+        visible_quality_desc = QLabel("Set 0 to obtain small compressed "
+                                      "files, 100 for large uncompressed "
+                                      "files -1 for default behavior.")
         visible_quality_desc.setWordWrap(True)
         visible_quality_desc.setMinimumSize(visible_quality_desc.sizeHint())
         visible_quality_layout = QVBoxLayout()
@@ -683,7 +674,7 @@ class MainWindow(QMainWindow):
         visible_slider_layout.addWidget(visible_quality_slider)
         visible_slider_layout.addWidget(visible_quality_value)
         visible_quality_layout.addLayout(visible_slider_layout)
-        visible_reset_button = QPushButton("Przywróć domyślne ustawienie")
+        visible_reset_button = QPushButton("Reset to default")
         visible_reset_button.clicked.connect(lambda:
                                              (visible_quality_slider.setValue(
                                                  0),
@@ -692,12 +683,11 @@ class MainWindow(QMainWindow):
         visible_quality_layout.addWidget(visible_reset_button)
         visible_quality_group.setLayout(visible_quality_layout)
         visible_layout.addWidget(visible_quality_group)
-        visible_format_group = QGroupBox("Format obrazów", visible_group)
+        visible_format_group = QGroupBox("Output files type", visible_group)
         visible_format_layout = QVBoxLayout()
         visible_format_desc = QLabel(
-            "To ustawienie jest brane pod uwagę podczas automatycznego "
-            "zapisywania plików przy stosowaniu zapisanych konfiguracji "
-            "znaków wodnych.")
+            "This setting is used when saving batches of files while "
+            "applying a preset.")
         visible_format_desc.setWordWrap(True)
         visible_format_desc.setMinimumSize(visible_format_desc.sizeHint())
         visible_format_layout.addWidget(visible_format_desc)
@@ -710,9 +700,9 @@ class MainWindow(QMainWindow):
         visible_layout.addWidget(visible_format_group)
         visible_group.setLayout(visible_layout)
         dialog_layout.addWidget(visible_group)
-        invisible_group = QGroupBox("Niewidoczne znaki wodne")
+        invisible_group = QGroupBox("Invisible watermarking")
         invisible_layout = QVBoxLayout()
-        invisible_format_group = QGroupBox("Format obrazów")
+        invisible_format_group = QGroupBox("Output files type")
         invisible_format_layout = QVBoxLayout()
         invisible_formats_combo = QComboBox(dialog)
         invisible_formats_combo.addItems([".jpg", ".jpeg", ".png", ".bmp",
@@ -721,15 +711,15 @@ class MainWindow(QMainWindow):
         invisible_format_layout.addWidget(invisible_formats_combo)
         invisible_format_group.setLayout(invisible_format_layout)
         invisible_layout.addWidget(invisible_format_group)
-        invisible_quality_group = QGroupBox("Jakość")
+        invisible_quality_group = QGroupBox("Quality")
         invisible_quality_layout = QVBoxLayout()
-        invisible_quality_desc = QLabel("To ustawienie jest brane pod uwagę "
-                                        "tylko gdy wybrany format obrazów to "
-                                        ".jpg/.jpeg. "
-                                        "Ustaw 1 dla niskiej jakości i "
-                                        "rozmiaru, "
-                                        "95 dla najlepszej jakości i "
-                                        "największego rozmiaru plików.")
+        invisible_quality_desc = QLabel("This setting is only used when the "
+                                        "selected type of the output files "
+                                        "is .jpg/.jpeg. "
+                                        "Select 1 for lowest quality and "
+                                        "smaller file size, "
+                                        "95 for best quality and biggest "
+                                        "file size.")
         invisible_quality_desc.setWordWrap(True)
         invisible_quality_desc.setMinimumSize(
             invisible_quality_desc.sizeHint())
@@ -761,13 +751,12 @@ class MainWindow(QMainWindow):
         dialog_layout.addWidget(invisible_group)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok |
                                    QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         dialog_layout.addWidget(buttons)
         dialog.setLayout(dialog_layout)
         result = dialog.exec()
-        self.main_layout.sidebar.log_text("Otwórz ustawienia jakości...")
+        self.main_layout.sidebar.log_text("Open quality settings...")
         if result == QDialog.Accepted:
             try:
                 self.visible_saving_quality = int(visible_quality_value.text())
@@ -779,43 +768,44 @@ class MainWindow(QMainWindow):
                     invisible_formats_combo.currentText()
                 self.save_settings()
                 self.main_layout.sidebar.log_text(
-                    "Ustawienia jakości pomyślnie zapisane.")
+                    "Quality settings successfully saved.")
             except Exception as e:
-                self.main_layout.sidebar.log_text(f"Błąd podczas zapisywania "
-                                                  f"ustawień jakości:\n"
+                self.main_layout.sidebar.log_text(f"Error while saving "
+                                                  f"quality settings:\n"
                                                   f"{e}.\n"
-                                                  f"Ustawienia NIE zostały "
-                                                  f"zapisane.",
+                                                  f"Settings have NOT been "
+                                                  f"saved.",
                                                   "red")
                 self.main_layout.sidebar.tabs.setCurrentIndex(1)
                 return
         else:
-            self.main_layout.sidebar.log_text("Anulowano ustawianie jakości.")
+            self.main_layout.sidebar.log_text("Setting quality canceled.")
 
     def get_invisible_encoding_settings(self):
         dialog = QDialog()
         dialog.setModal(True)
         dialog.setWindowIcon(self.icon)
-        dialog.setWindowTitle("Ustawienia niewidocznego znaku wodnego")
+        dialog.setWindowTitle("Invisible watermarking settings")
         dialog_layout = QVBoxLayout()
-        process_desc = QLabel("Znakowany obraz będzie przekonwertowany do "
-                              "przestrzeni barw RGB i utraci ewentualną "
-                              "przezroczystość.")
+        process_desc = QLabel("Watermarked image will be converted to "
+                              "the RGB color space and will lose transparency "
+                              "(if any).")
         process_desc.setWordWrap(True)
         process_desc.setMinimumSize(process_desc.sizeHint())
         dialog_layout.addWidget(process_desc)
 
         mode_combo = QComboBox(dialog)
-        mode_combo.addItems(["Zakoduj znak wodny w zaznaczonym obrazie",
-                             "Zakoduj znak wodny we wszystkich obrazach z "
-                             "listy"])
+        mode_combo.addItems(["Encode an invisible watermark in the current "
+                             "image",
+                             "Encode an invisible watermark in all loaded "
+                             "images"])
         dialog_layout.addWidget(mode_combo)
 
-        q_group = QGroupBox("Siła znakowania")
+        q_group = QGroupBox("Watermarking strength")
         q_layout = QVBoxLayout()
-        q_desc = QLabel("Dostosuj parametr Q. Większe wartości oznaczają "
-                        "trwalszy znak wodny przy wyższym ryzyku widocznych "
-                        "zmian w znakowanym obrazie.")
+        q_desc = QLabel("Adjust the Q parameter. Higher values mean more "
+                        "robust watermark at the greater risk of making"
+                        "noticeable changes to the cover image.")
         q_desc.setWordWrap(True)
         q_desc.setMinimumSize(q_desc.sizeHint())
         q_layout.addWidget(q_desc)
@@ -828,13 +818,13 @@ class MainWindow(QMainWindow):
         q_layout.addLayout(q_input_layout)
         q_group.setLayout(q_layout)
         dialog_layout.addWidget(q_group)
-        channel_group = QGroupBox("Kanał")
+        channel_group = QGroupBox("Channel")
         channel_layout = QVBoxLayout()
-        channel_desc = QLabel("Ustaw kanał, w którym ma być zakodowany znak "
-                              "wodny. Rekomendowane są B lub G (ludzki wzrok "
-                              "jest mniej wrażliwy na zmiany w tych "
-                              "kanałach).\n"
-                              "R - czerwony, G - zielony, B - niebieski")
+        channel_desc = QLabel("Pick channel in which the watermark should be "
+                              "encoded. The optimal channel depends on the "
+                              "cover image. Try experimenting with this "
+                              "setting if the results are unsatisfactory.\n"
+                              "R - red, G - green, B - blue")
         channel_desc.setWordWrap(True)
         channel_desc.setMinimumSize(channel_desc.sizeHint())
         channel_layout.addWidget(channel_desc)
@@ -844,11 +834,11 @@ class MainWindow(QMainWindow):
         channel_layout.addWidget(channel_combo)
         channel_group.setLayout(channel_layout)
         dialog_layout.addWidget(channel_group)
-        output_dir_group = QGroupBox("Lokalizacja wyjściowa")
+        output_dir_group = QGroupBox("Output directory")
         output_dir_group_layout = QVBoxLayout()
         output_dir_text = QLineEdit(os.path.dirname(os.path.realpath(
             __file__)))
-        output_dir_button = QPushButton("Ustaw lokalizację wyjściową")
+        output_dir_button = QPushButton("Set output directory")
         output_dir_dialog = QFileDialog()
         output_dir_dialog.setFileMode(QFileDialog.Directory)
         output_dir_dialog.setOption(QFileDialog.ShowDirsOnly, True)
@@ -863,19 +853,19 @@ class MainWindow(QMainWindow):
         output_dir_group.setLayout(output_dir_group_layout)
         dialog_layout.addWidget(output_dir_group)
 
-        watermark_group = QGroupBox("Znak wodny do zakodowania")
+        watermark_group = QGroupBox("Watermark to encode")
         watermark_layout = QVBoxLayout()
-        watermark_desc = QLabel("Obraz zostanie przekonwertowany do skali "
-                                "szarości i przeskalowany w zależności od "
-                                "rozmiaru znakowanego obrazu.")
+        watermark_desc = QLabel("Image will be converted to grayscale "
+                                "and resized depending on the cover image "
+                                "size.")
         watermark_desc.setWordWrap(True)
         watermark_desc.setMinimumSize(watermark_desc.sizeHint())
         watermark_dir_text = QLineEdit()
-        watermark_dir_button = QPushButton("Wybierz obraz")
-        watermark_dialog = QFileDialog(caption="Wybierz obraz",
-                                       filter="Image files (*.bmp *.BMP "
+        watermark_dir_button = QPushButton("Choose image")
+        watermark_dialog = QFileDialog(filter="Image files (*.bmp *.BMP "
                                               "*.jpeg "
-                                              "*.JPEG *.jpg *.JPG *.png *.PNG )")
+                                              "*.JPEG *.jpg *.JPG *.png "
+                                              "*.PNG )")
         watermark_dir_button. \
             clicked. \
             connect(lambda: watermark_dir_text.
@@ -890,7 +880,6 @@ class MainWindow(QMainWindow):
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setEnabled(False)
-        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         output_dir_text.textChanged.connect(lambda text: buttons.button(
             QDialogButtonBox.Ok).setEnabled(bool(len(text)) and bool(len(
             watermark_dir_text.text()))))
@@ -901,8 +890,8 @@ class MainWindow(QMainWindow):
         dialog.setLayout(dialog_layout)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
-        self.main_layout.sidebar.log_text("Otwórz ustawienia niewidocznego "
-                                          "znaku wodnego...")
+        self.main_layout.sidebar.log_text("Open invisible watermarking "
+                                          "settings...")
         result = dialog.exec()
         if result == QDialog.Accepted:
             self.encode_invisible_watermark(q_input.value(),
@@ -917,14 +906,14 @@ class MainWindow(QMainWindow):
                                                   channel.lower(),
                                                   self.invisible_saving_format,
                                                   self.invisible_saving_quality)
-        self.main_layout.sidebar.log_text("Rozpoczęcie kodowania "
-                                          "niewidocznego znaku wodnego.")
-        if mode == "Zakoduj znak wodny w zaznaczonym obrazie":
+        self.main_layout.sidebar.log_text("Encoding invisible watermark "
+                                          "started.")
+        if mode == "Encode watermark in the current image":
             image_path = self.main_layout.sidebar. \
                 navigation.currentItem().data(Qt.UserRole)
             dialog = QMessageBox(QMessageBox.Information, "Watermark",
-                                 "Kodowanie. Proces może chwilę potrwać, "
-                                 "proszę czekać...")
+                                 "Encoding. It may take a while, please "
+                                 "wait...")
             try:
                 dialog.setStandardButtons(QMessageBox.NoButton)
                 dialog.setWindowFlags(Qt.WindowTitleHint)
@@ -934,25 +923,24 @@ class MainWindow(QMainWindow):
                 psnr = invisible_watermark.encode(image_path,
                                                   watermark_path, output_dir)
                 dialog.close()
-                self.main_layout.sidebar.log_text(f"Pomyślnie zakodowano "
-                                                  f"niewidoczny znak wodny. "
-                                                  f"Oznakowany obraz "
-                                                  f"zapisany do ["
+                self.main_layout.sidebar.log_text(f"Successfully encoded "
+                                                  f"the invisible watermark. "
+                                                  f"The watermarked image "
+                                                  f"saved to ["
                                                   f"{output_dir}].")
             except Exception as e:
-                self.main_layout.sidebar.log_text(f"Błąd podczas kodowania "
-                                                  f"niewidocznego znaku "
-                                                  f"wodnego:\n"
-                                                  f"{e}. Oznakowany obraz "
-                                                  f"NIE został zapisany. "
-                                                  f"Przerywam...",
+                self.main_layout.sidebar.log_text(f"Error while encoding "
+                                                  f"the invisible watermark: "
+                                                  f"\n {e}. The watermarked "
+                                                  f"image has NOT been saved."
+                                                  f"Aborting...",
                                                   "red")
                 dialog.close()
                 self.main_layout.sidebar.tabs.setCurrentIndex(1)
                 return
         else:
-            progress = QProgressDialog("Kodowanie znaku wodnego...",
-                                       "Anuluj", 0,
+            progress = QProgressDialog("Encoding the watermark...",
+                                       "Cancel", 0,
                                        len(self.main_layout.sidebar.
                                            navigation.loaded_images),
                                        self)
@@ -966,41 +954,41 @@ class MainWindow(QMainWindow):
                     QApplication.processEvents()
                     progress.setValue(i)
                     if progress.wasCanceled():
-                        self.main_layout.sidebar.log_text("Anulowano "
-                                                          "kodowanie znaku "
-                                                          "wodnego.")
+                        self.main_layout.sidebar.log_text("Encoding the "
+                                                          "invisible "
+                                                          "watermark "
+                                                          "canceled.")
                         self.main_layout.sidebar.tabs.setCurrentIndex(1)
                         return
                     psnr = invisible_watermark.encode(image, watermark_path,
                                                       output_dir)
                     image_name = os.path.basename(image)
                     self.main_layout.sidebar.log_text(f"{image_name}\n"
-                                                      f"Pomyślnie oznakowano.")
+                                                      f"Successfully "
+                                                      f"watermarked.")
                 progress.setValue(len(self.main_layout.sidebar.navigation.
                                       loaded_images))
             except Exception as e:
-                self.main_layout.sidebar.log_text(f"Błąd podczas kodowania:\n"
+                self.main_layout.sidebar.log_text(f"Error while encoding:\n"
                                                   f"{e}.\n"
-                                                  f"Przerywam...", "red")
+                                                  f"Aborting...", "red")
                 progress.setValue(len(self.main_layout.sidebar.navigation.
                                       loaded_images))
                 self.main_layout.sidebar.tabs.setCurrentIndex(1)
                 return
-        self.main_layout.sidebar.log_text("Zakończono kodowanie znaku "
-                                          "wodnego.")
+        self.main_layout.sidebar.log_text("Encoding watermark finished.")
         self.main_layout.sidebar.tabs.setCurrentIndex(1)
 
     def get_invisible_decoding_settings(self):
         dialog = QDialog()
         dialog.setModal(True)
         dialog.setWindowIcon(self.icon)
-        dialog.setWindowTitle("Ustawienia dekodowania niewidocznych znaków "
-                              "wodnych")
+        dialog.setWindowTitle("Invisible watermark decoding settings")
         dialog_layout = QVBoxLayout()
-        settings_group = QGroupBox("Ustawienia znaku wodnego")
+        settings_group = QGroupBox("Watermark settings")
         settings_layout = QVBoxLayout()
-        settings_desc = QLabel("Proszę wskazać, jakie ustawienia zostały "
-                               "użyte do zakodowania znaku.")
+        settings_desc = QLabel("Please specify what settings were used to "
+                               "encode the watermark.")
         settings_desc.setWordWrap(True)
         settings_desc.setMinimumSize(settings_desc.sizeHint())
         settings_layout.addWidget(settings_desc)
@@ -1012,7 +1000,7 @@ class MainWindow(QMainWindow):
         q_layout.addWidget(q_input)
         settings_layout.addLayout(q_layout)
         channel_layout = QHBoxLayout()
-        channel_layout.addWidget(QLabel("Kanał"))
+        channel_layout.addWidget(QLabel("Channel"))
         channel_combo = QComboBox()
         channel_combo.addItems(["R", "G", "B"])
         channel_combo.setCurrentText("B")
@@ -1023,7 +1011,6 @@ class MainWindow(QMainWindow):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok |
                                    QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Cancel).setText("Anuluj")
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         dialog_layout.addWidget(buttons)
@@ -1041,11 +1028,11 @@ class MainWindow(QMainWindow):
                                                   channel.lower(),
                                                   self.invisible_saving_format,
                                                   self.invisible_saving_quality)
-        self.main_layout.sidebar.log_text("Rozpoczęto dekodowanie znaku "
-                                          "wodnego .")
+        self.main_layout.sidebar.log_text("Invisible watermark decoding "
+                                          "started.")
         dialog = QMessageBox(QMessageBox.Information, "Watermark",
-                             "Dekodowanie w toku. Proces może chwilę zająć, "
-                             "proszę czekać...")
+                             "Decoding in progress. It may take a while, "
+                             "please wait...")
         try:
             dialog.setStandardButtons(QMessageBox.NoButton)
             dialog.setWindowFlags(Qt.WindowTitleHint)
@@ -1054,18 +1041,19 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
             invisible_watermark.decode(image_path, "extracted watermarks")
             dialog.close()
-            self.main_layout.sidebar.log_text("Pomyślnie zdekodowano znak "
-                                              "wodny. Obraz został zapisany "
-                                              "w folderze [<folder "
-                                              "programu Watermark>\\"
+            self.main_layout.sidebar.log_text("Invisible watermark "
+                                              "successfully decoded. "
+                                              "The image saved to "
+                                              "the directory [<application "
+                                              "directory>\\"
                                               "extracted watermarks].")
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
         except Exception as e:
-            self.main_layout.sidebar.log_text(f"Błąd podczas dekodowania "
-                                              f"znaku wodnego:\n"
+            self.main_layout.sidebar.log_text(f"Error while decoding the "
+                                              f"watermark:\n"
                                               f"{e}.\n"
-                                              f"Znak wodny NIE został "
-                                              f"odczytany.",
+                                              f"The watermark has NOT been "
+                                              f"decoded.",
                                               "red")
             dialog.close()
             self.main_layout.sidebar.tabs.setCurrentIndex(1)
@@ -1073,23 +1061,19 @@ class MainWindow(QMainWindow):
 
     def display_about(self):
         dialog = QDialog()
-        dialog.setWindowTitle("O aplikacji Watermark")
+        dialog.setWindowTitle("About Watermark")
         dialog.setWindowIcon(self.icon)
         dialog.setModal(True)
         dialog_layout = QVBoxLayout()
-        dialog_layout.addWidget(QLabel("Aplikacja Watermark v1.0"))
-        dialog_layout.addWidget(QLabel("Autor: Magdalena Kucharska, "
-                                       "209942@student.pwr.edu.pl"))
-        dialog_layout.addWidget(QLabel("Aplikacja Watermark umożliwia "
-                                       "podpisywanie plików graficznych "
-                                       "widocznymi i niewidocznymi znakami "
-                                       "wodnymi."))
-        dialog_layout.addWidget(QLabel("Implementacja w języku Python 3.7. "
-                                       "Lista wymaganych bibliotek znajduje "
-                                       "się w pliku requirements.txt."))
-        link = QLabel("Logo aplikacji wykonane na podstawie darmowej ikony "
-                      "stworzonej przez "
-                      "<a href=\"https://www.flaticon.com/authors/good-ware\">"
+        dialog_layout.addWidget(QLabel("Watermark v1.0-alpha"))
+        dialog_layout.addWidget(QLabel("Watermark enables watermarking "
+                                       "of images with visible and invisible "
+                                       "watermarks."))
+        dialog_layout.addWidget(QLabel("Implemented in Python 3.7. "
+                                       "Dependencies are listed in the "
+                                       "requirements.txt file."))
+        link = QLabel("Application's logo is based on the free icon created "
+                      "by <a href=\"https://www.flaticon.com/authors/good-ware\">"
                       "Good Ware</a>.")
         link.setTextFormat(Qt.RichText)
         link.setTextInteractionFlags(Qt.TextBrowserInteraction)
